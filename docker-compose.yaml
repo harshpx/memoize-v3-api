@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  memoize-api:
+    image: memoize-api:latest
+    container_name: memoize-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - secrets.env
