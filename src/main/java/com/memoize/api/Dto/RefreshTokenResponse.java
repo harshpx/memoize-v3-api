@@ -6,7 +6,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @Builder
-public class RotateRefreshTokenResponse {
+public class RefreshTokenResponse {
     private String refreshToken;
-    private AuthenticationResponse authResponse;
+    private String accessToken;
 }

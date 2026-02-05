@@ -2,11 +2,13 @@ package com.memoize.api.Service;
 
 import com.memoize.api.Config.Common;
 import com.memoize.api.Dto.AuthenticationResponse;
-import com.memoize.api.Dto.RotateRefreshTokenResponse;
+import com.memoize.api.Dto.RefreshTokenResponse;
 import com.memoize.api.Entity.RefreshToken;
 import com.memoize.api.Entity.User;
 import com.memoize.api.Repository.RefreshTokenRepository;
 import com.memoize.api.Repository.UserRepository;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
@@ -39,54 +41,44 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public boolean validateRefreshToken(String token) {
-        String[] parts = token.split("\\.");
-        if (parts.length != 2) return false;
-        UUID tokenId;
-        try {
-            tokenId = UUID.fromString(parts[0]);
-        } catch (IllegalArgumentException e) {
-            return false;
+    public RefreshTokenResponse refreshAccessToken(HttpServletRequest request) {
+        String refreshToken = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (var cookie : cookies) {
+                if (cookie.getName().equals("refreshToken")) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
         }
-        String rawSecret = parts[1];
-
-        return refreshTokenRepository.findById(tokenId)
-                .filter(rt -> rt.getExpiresAt().isAfter(LocalDateTime.now()))
-                .filter(rt -> Common.PASSWORD_ENCODER.matches(rawSecret, rt.getTokenHash()))
-                .map(rt -> userRepository.existsById(rt.getUserId()))
-                .orElse(false);
+        RefreshToken oldRefreshTokenEntity = validateAndGetRefreshTokenEntity(refreshToken);
+        UUID userId = oldRefreshTokenEntity.getUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String newJwtToken = jwtService.generateToken(userId.toString(), user.getRole().name());
+        refreshTokenRepository.delete(oldRefreshTokenEntity);
+        String newRefreshToken = generateRefreshToken(userId);
+        return RefreshTokenResponse.builder()
+                .refreshToken(newRefreshToken)
+                .accessToken(newJwtToken)
+                .build();
     }
 
     @Override
-    @Transactional
-    public void removeRefreshToken(String token) {
-        if (token == null || token.isBlank()) return;
-        String[] parts = token.split("\\.");
-        if (parts.length != 2) return;
-        UUID tokenId;
-        try {
-            tokenId = UUID.fromString(parts[0]);
-        } catch (IllegalArgumentException e) {
-            return;
+    public void logoutHandler(HttpServletRequest request) {
+        String refreshToken = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (var cookie : cookies) {
+                if (cookie.getName().equals("refreshToken")) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
         }
-        refreshTokenRepository.deleteById(tokenId);
+        removeRefreshToken(refreshToken);
     }
 
-    @Override
-    public String rotateRefreshToken(String oldToken) {
-        String[] parts = oldToken.split("\\.");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Invalid refresh token format");
-        }
-        UUID oldTokenId = UUID.fromString(parts[0]);
-        RefreshToken oldRefreshToken = refreshTokenRepository.findById(oldTokenId)
-                .orElseThrow(() -> new IllegalArgumentException("Refresh token not found"));
-        UUID userId = oldRefreshToken.getUserId();
-        // Invalidate old token
-        refreshTokenRepository.deleteById(oldTokenId);
-        // Generate new token
-        return generateRefreshToken(userId);
-    }
 
     @Override
     public ResponseCookie createRefreshTokenCookie(String refreshToken) {
@@ -106,23 +98,31 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .build();
     }
 
-    @Override
-    public RotateRefreshTokenResponse refreshAccessToken(String refreshToken) {
-        if (refreshToken == null || !validateRefreshToken(refreshToken)) {
-            throw new IllegalArgumentException("Invalid refresh token");
-        }
-        String[] parts = refreshToken.split("\\.");
+    // helpers
+    public RefreshToken validateAndGetRefreshTokenEntity(String token) throws IllegalArgumentException {
+        if (token == null || token.isBlank()) throw new IllegalArgumentException("No refresh token present");
+        String[] parts = token.split("\\.");
+        if (parts.length != 2) throw new IllegalArgumentException("Invalid refresh token");
         UUID tokenId = UUID.fromString(parts[0]);
-        RefreshToken oldRefreshTokenEntity = refreshTokenRepository.findById(tokenId)
-                .orElseThrow(() -> new IllegalArgumentException("Refresh token not found"));
-        UUID userId = oldRefreshTokenEntity.getUserId();
-        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-        String newJwtToken = jwtService.generateToken(userId.toString(), user.getRole().name());
-        refreshTokenRepository.delete(oldRefreshTokenEntity);
-        String newRefreshToken = generateRefreshToken(userId);
-        return RotateRefreshTokenResponse.builder()
-                .refreshToken(newRefreshToken)
-                .authResponse(AuthenticationResponse.of(newJwtToken, userId))
-                .build();
+        String rawSecret = parts[1];
+
+        return refreshTokenRepository.findById(tokenId)
+                .filter(rt -> rt.getExpiresAt().isAfter(LocalDateTime.now()))
+                .filter(rt -> Common.PASSWORD_ENCODER.matches(rawSecret, rt.getTokenHash()))
+                .filter(rt -> userRepository.existsById(rt.getUserId())).orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+    }
+
+    @Transactional
+    public void removeRefreshToken(String token) {
+        if (token == null || token.isBlank()) return;
+        String[] parts = token.split("\\.");
+        if (parts.length != 2) return;
+        UUID tokenId;
+        try {
+            tokenId = UUID.fromString(parts[0]);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        refreshTokenRepository.deleteById(tokenId);
     }
 }

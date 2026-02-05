@@ -14,7 +14,7 @@ public interface AuthController {
     ResponseEntity<CommonResponse<AuthenticationResponse>> userLogin(LoginRequest loginRequest);
     ResponseEntity<CommonResponse<AuthenticationResponse>> userSignup(SignupRequest signupRequest);
     ResponseEntity<CommonResponse<AuthenticationResponse>> refreshToken(HttpServletRequest request, HttpServletResponse response);
+    ResponseEntity<CommonResponse<Null>> logout(HttpServletRequest request, HttpServletResponse response);
     ResponseEntity<CommonResponse<Boolean>> isUsernameAvailable(String username);
     ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(String email);
-    ResponseEntity<CommonResponse<Null>> logout(HttpServletRequest request, HttpServletResponse response);
 }

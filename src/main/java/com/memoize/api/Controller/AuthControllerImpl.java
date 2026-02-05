@@ -45,23 +45,24 @@ public class AuthControllerImpl implements AuthController {
     @Override
     @PostMapping("/refresh")
     public ResponseEntity<CommonResponse<AuthenticationResponse>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        Cookie[] cookies = request.getCookies();
-        String refreshToken = null;
-        if (cookies != null) {
-            for (var cookie : cookies) {
-                if (cookie.getName().equals("refreshToken")) {
-                    refreshToken = cookie.getValue();
-                    break;
-                }
-            }
-        }
-        RotateRefreshTokenResponse tokenData = refreshTokenService.refreshAccessToken(refreshToken);
+        RefreshTokenResponse tokenData = refreshTokenService.refreshAccessToken(request);
         String newRefreshToken = tokenData.getRefreshToken();
-        AuthenticationResponse authResponse = tokenData.getAuthResponse();
+        String newAccessToken = tokenData.getAccessToken();
+
+        var authResponse = AuthenticationResponse.of(newAccessToken);
         var refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(newRefreshToken);
+
         return ResponseEntity.ok()
                 .header("Set-Cookie", refreshTokenCookie.toString())
                 .body(CommonResponse.success(authResponse));
+    }
+
+    @Override
+    @PostMapping("/logout")
+    public ResponseEntity<CommonResponse<Null>> logout(HttpServletRequest request, HttpServletResponse response) {
+        refreshTokenService.logoutHandler(request);
+        ResponseCookie deleteCookie = refreshTokenService.deleteRefreshTokenCookie();
+        return ResponseEntity.ok().header("Set-Cookie", deleteCookie.toString()).body(CommonResponse.success(null));
     }
 
     @Override
@@ -74,23 +75,5 @@ public class AuthControllerImpl implements AuthController {
     @GetMapping("/check-email")
     public ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(@RequestParam(name = "email") String email) {
         return ResponseEntity.ok(CommonResponse.success(authService.isEmailAvailable(email)));
-    }
-
-    @Override
-    @PostMapping("/logout")
-    public ResponseEntity<CommonResponse<Null>> logout(HttpServletRequest request, HttpServletResponse response) {
-        Cookie[] cookies = request.getCookies();
-        String refreshToken = null;
-        if (cookies != null) {
-            for (var cookie : cookies) {
-                if (cookie.getName().equals("refreshToken")) {
-                    refreshToken = cookie.getValue();
-                    break;
-                }
-            }
-        }
-        refreshTokenService.removeRefreshToken(refreshToken);
-        ResponseCookie deleteCookie = refreshTokenService.deleteRefreshTokenCookie();
-        return ResponseEntity.ok().header("Set-Cookie", deleteCookie.toString()).body(CommonResponse.success(null));
     }
 }
