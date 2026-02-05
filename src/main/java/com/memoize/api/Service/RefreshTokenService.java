@@ -12,5 +12,6 @@ public interface RefreshTokenService {
     void removeRefreshToken(String token);
     String rotateRefreshToken(String oldToken);
     ResponseCookie createRefreshTokenCookie(String refreshToken);
+    ResponseCookie deleteRefreshTokenCookie();
     RotateRefreshTokenResponse refreshAccessToken(String refreshToken);
 }

@@ -7,9 +7,6 @@ import com.memoize.api.Dto.SignupRequest;
 import com.memoize.api.Entity.User;
 import com.memoize.api.Enum.Role;
 import com.memoize.api.Repository.UserRepository;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,7 +21,6 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
 
     @Override
@@ -52,6 +48,21 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
         String jwtToken = jwtService.generateToken(user.getId().toString(), user.getRole().name());
         return AuthenticationResponse.of(jwtToken, user.getId());
+    }
+
+    @Override
+    public Boolean isUsernameAvailable(String username) {
+        return userRepository.findByUsername(username).isEmpty();
+    }
+
+    @Override
+    public Boolean isEmailAvailable(String email) {
+        return userRepository.findByEmail(email).isEmpty();
+    }
+
+    @Override
+    public void logout() {
+
     }
 
 }

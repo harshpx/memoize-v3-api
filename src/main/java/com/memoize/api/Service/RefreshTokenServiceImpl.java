@@ -60,6 +60,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     @Transactional
     public void removeRefreshToken(String token) {
+        if (token == null || token.isBlank()) return;
         String[] parts = token.split("\\.");
         if (parts.length != 2) return;
         UUID tokenId;
@@ -93,6 +94,15 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .httpOnly(true).secure(true)
                 .path("/auth/refresh").sameSite("Lax")
                 .maxAge(this.refreshTokenExpiration)
+                .build();
+    }
+
+    @Override
+    public ResponseCookie deleteRefreshTokenCookie() {
+        return ResponseCookie.from("refreshToken", "")
+                .httpOnly(true).secure(true)
+                .path("/auth/refresh").sameSite("Lax")
+                .maxAge(0)
                 .build();
     }
 

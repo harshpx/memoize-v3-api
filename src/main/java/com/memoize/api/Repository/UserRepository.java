@@ -14,4 +14,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         WHERE u.username = :identifier OR u.email = :identifier
     """)
     Optional<User> findByIdentifier(@Param("identifier") String identifier);
+
+    Optional<User> findByUsername(String username);
+
+    Optional<User> findByEmail(String email);
 }

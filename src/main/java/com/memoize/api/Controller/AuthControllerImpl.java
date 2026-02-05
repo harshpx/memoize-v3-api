@@ -7,6 +7,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +43,7 @@ public class AuthControllerImpl implements AuthController {
     }
 
     @Override
-    @GetMapping("/refresh")
+    @PostMapping("/refresh")
     public ResponseEntity<CommonResponse<AuthenticationResponse>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         Cookie[] cookies = request.getCookies();
         String refreshToken = null;
@@ -54,7 +55,6 @@ public class AuthControllerImpl implements AuthController {
                 }
             }
         }
-
         RotateRefreshTokenResponse tokenData = refreshTokenService.refreshAccessToken(refreshToken);
         String newRefreshToken = tokenData.getRefreshToken();
         AuthenticationResponse authResponse = tokenData.getAuthResponse();
@@ -62,5 +62,35 @@ public class AuthControllerImpl implements AuthController {
         return ResponseEntity.ok()
                 .header("Set-Cookie", refreshTokenCookie.toString())
                 .body(CommonResponse.success(authResponse));
+    }
+
+    @Override
+    @GetMapping("/check-username")
+    public ResponseEntity<CommonResponse<Boolean>> isUsernameAvailable(@RequestParam(name = "username") String username) {
+        return ResponseEntity.ok(CommonResponse.success(authService.isUsernameAvailable(username)));
+    }
+
+    @Override
+    @GetMapping("/check-email")
+    public ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(@RequestParam(name = "email") String email) {
+        return ResponseEntity.ok(CommonResponse.success(authService.isEmailAvailable(email)));
+    }
+
+    @Override
+    @PostMapping("/logout")
+    public ResponseEntity<CommonResponse<Null>> logout(HttpServletRequest request, HttpServletResponse response) {
+        Cookie[] cookies = request.getCookies();
+        String refreshToken = null;
+        if (cookies != null) {
+            for (var cookie : cookies) {
+                if (cookie.getName().equals("refreshToken")) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        refreshTokenService.removeRefreshToken(refreshToken);
+        ResponseCookie deleteCookie = refreshTokenService.deleteRefreshTokenCookie();
+        return ResponseEntity.ok().header("Set-Cookie", deleteCookie.toString()).body(CommonResponse.success(null));
     }
 }
