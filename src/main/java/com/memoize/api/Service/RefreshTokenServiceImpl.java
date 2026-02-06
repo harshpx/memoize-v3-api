@@ -84,7 +84,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public ResponseCookie createRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true).secure(true)
-                .path("/auth/refresh").sameSite("Lax")
+                .path("/auth/refresh").sameSite("None")
                 .maxAge(this.refreshTokenExpiration)
                 .build();
     }
@@ -93,7 +93,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public ResponseCookie deleteRefreshTokenCookie() {
         return ResponseCookie.from("refreshToken", "")
                 .httpOnly(true).secure(true)
-                .path("/auth/refresh").sameSite("Lax")
+                .path("/auth/refresh").sameSite("None")
                 .maxAge(0)
                 .build();
     }
