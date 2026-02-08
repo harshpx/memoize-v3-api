@@ -29,14 +29,10 @@ public class RefreshToken {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
     @PrePersist
     protected void prePersist() {
-       if (this.expiresAt == null) {
-           this.expiresAt = LocalDateTime.now().plusMinutes(10);
-       }
+        if (this.expiresAt == null) {
+            this.expiresAt = LocalDateTime.now().plusMinutes(10);
+        }
     }
 }

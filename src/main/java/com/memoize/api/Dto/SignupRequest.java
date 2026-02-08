@@ -12,6 +12,9 @@ import lombok.Data;
 public class SignupRequest {
     @NotNull
     @NotEmpty
+    private String verificationCode;
+    @NotNull
+    @NotEmpty
     private String name;
     @NotNull
     @NotEmpty

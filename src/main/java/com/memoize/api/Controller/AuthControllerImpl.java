@@ -13,6 +13,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -75,5 +77,16 @@ public class AuthControllerImpl implements AuthController {
     @GetMapping("/check-email")
     public ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(@RequestParam(name = "email") String email) {
         return ResponseEntity.ok(CommonResponse.success(authService.isEmailAvailable(email)));
+    }
+
+    @Override
+    @PostMapping("/email-verification")
+    public ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(@RequestBody Map<String, String> emailData) {
+        String email = emailData.get("email");
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        authService.sendVerificationEmail(email, true);
+        return ResponseEntity.ok(CommonResponse.success(true));
     }
 }

@@ -3,9 +3,9 @@ package com.memoize.api.Config;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Base64;
 
 public class Common {
     public static final String[] PUBLIC_ENDPOINTS = {"/", "/login", "/auth/**"};
@@ -20,5 +20,14 @@ public class Common {
             sb.append(CHARS.charAt(random.nextInt(CHARS.length())));
         }
         return sb.toString();
+    }
+
+    public static String encodeBase64(String originalString) {
+        return Base64.getEncoder().encodeToString(originalString.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String decodeBase64(String encodedString) {
+        byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
+        return new String(decodedBytes, StandardCharsets.UTF_8);
     }
 }
