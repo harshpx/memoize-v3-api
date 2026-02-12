@@ -24,9 +24,6 @@ public class Note {
     @Column(name = "id", columnDefinition = "uuid default gen_random_uuid()", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "title")
-    private String title;
-
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
