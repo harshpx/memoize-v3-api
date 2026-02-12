@@ -29,8 +29,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthenticationResponse login(LoginRequest request) {
-        String identifier = request.getIdentifier();
-        String password = request.getPassword();
+        String identifier = request.identifier();
+        String password = request.password();
         Authentication auth = authenticationManager.
                 authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
         User authenticatedUser = (User) auth.getPrincipal();
@@ -42,14 +42,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthenticationResponse signup(SignupRequest request) {
-        if (!verifyCode(request.getEmail(), request.getVerificationCode())) {
+        if (!verifyCode(request.email(), request.verificationCode())) {
             throw new IllegalArgumentException("Invalid verification code");
         }
         User user = User.builder()
-                .name(request.getName())
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(Common.PASSWORD_ENCODER.encode(request.getPassword()))
+                .name(request.name())
+                .username(request.username())
+                .email(request.email())
+                .password(Common.PASSWORD_ENCODER.encode(request.password()))
                 .role(Role.USER)
                 .build();
         userRepository.saveAndFlush(user);

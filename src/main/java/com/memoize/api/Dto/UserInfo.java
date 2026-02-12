@@ -5,17 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-@Data
 @Builder
-@AllArgsConstructor
-public class UserInfo {
-    private String id;
-    private String name;
-    private String username;
-    private String email;
-    private String avatarUrl;
-    private String role;
-
+public record UserInfo(String id, String name, String username, String email, String avatarUrl, String role) {
     public static UserInfo fromEntity(User user) {
         return UserInfo.builder()
                 .id(user.getId().toString())

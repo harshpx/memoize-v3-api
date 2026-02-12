@@ -45,7 +45,7 @@ public class OAuth2Config {
             String provider  = oAuthToken.getAuthorizedClientRegistrationId();
             OAuth2UserInfo userInfo = getOAuth2UserInfo(oAuthUser, provider);
             AuthenticationResponse authResponse = oAuth2Login(userInfo);
-            String refreshToken = refreshTokenService.generateRefreshToken(authResponse.getUserId());
+            String refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
             ResponseCookie refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
             ObjectMapper objectMapper = new ObjectMapper();
             response.setStatus(200);
@@ -65,7 +65,7 @@ public class OAuth2Config {
     }
 
     @Transactional
-    private AuthenticationResponse oAuth2Login(OAuth2UserInfo userInfo) {
+    protected AuthenticationResponse oAuth2Login(OAuth2UserInfo userInfo) {
         User existingUser = userRepository.findByIdentifier(userInfo.email()).orElse(null);
         AuthenticationResponse authResponse = null;
         if (existingUser != null) {

@@ -1,12 +1,7 @@
 package com.memoize.api.Dto;
 
-import lombok.*;
+import lombok.Builder;
 
-@Getter
-@Setter
-@AllArgsConstructor
 @Builder
-public class RefreshTokenResponse {
-    private String refreshToken;
-    private String accessToken;
+public record RefreshTokenResponse(String refreshToken, String accessToken) {
 }

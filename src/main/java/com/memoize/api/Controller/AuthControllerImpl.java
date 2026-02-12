@@ -26,7 +26,7 @@ public class AuthControllerImpl implements AuthController {
     @PostMapping("/login")
     public ResponseEntity<CommonResponse<AuthenticationResponse>> userLogin(@Valid @RequestBody LoginRequest loginRequest) {
         var authResponse = authService.login(loginRequest);
-        var refreshToken = refreshTokenService.generateRefreshToken(authResponse.getUserId());
+        var refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
         var refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
         return ResponseEntity.ok()
                 .header("Set-Cookie", refreshTokenCookie.toString())
@@ -37,7 +37,7 @@ public class AuthControllerImpl implements AuthController {
     @PostMapping("/signup")
     public ResponseEntity<CommonResponse<AuthenticationResponse>> userSignup(@Valid @RequestBody SignupRequest signupRequest) {
         var authResponse = authService.signup(signupRequest);
-        var refreshToken = refreshTokenService.generateRefreshToken(authResponse.getUserId());
+        var refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
         var refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
         return ResponseEntity.ok()
                 .header("Set-Cookie", refreshTokenCookie.toString())
@@ -48,8 +48,8 @@ public class AuthControllerImpl implements AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<CommonResponse<AuthenticationResponse>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         RefreshTokenResponse tokenData = refreshTokenService.refreshAccessToken(request);
-        String newRefreshToken = tokenData.getRefreshToken();
-        String newAccessToken = tokenData.getAccessToken();
+        String newRefreshToken = tokenData.refreshToken();
+        String newAccessToken = tokenData.accessToken();
 
         var authResponse = AuthenticationResponse.of(newAccessToken);
         var refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(newRefreshToken);

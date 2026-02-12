@@ -14,8 +14,6 @@ import java.util.Map;
 public class MailServiceImpl implements MailService {
     private final RestClient restClient;
 
-    ;
-
     public MailServiceImpl(
             @Value("${mailjet.api.key}") String mailjetApiKey,
             @Value("${mailjet.api.secret}") String mailjetApiSecret
@@ -28,16 +26,16 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendEmail(EmailRequest emailRequest) {
-        if (emailRequest.getRecipients() == null || emailRequest.getRecipients().isEmpty()) {
+        if (emailRequest.recipients() == null || emailRequest.recipients().isEmpty()) {
             throw new RuntimeException("At least one recipient email address is required.");
         }
-        List<Map<String, Object>> recipients = emailRequest.getRecipients()
+        List<Map<String, Object>> recipients = emailRequest.recipients()
                 .stream().map(mail -> Map.of("Email", (Object) mail)).toList();
         Map<String, Object> body = new HashMap<>();
         body.put("FromEmail", "support@memoize.in");
         body.put("FromName", "Memoize Team");
-        body.put("Subject", emailRequest.getSubject());
-        body.put("Html-part", emailRequest.getBody());
+        body.put("Subject", emailRequest.subject());
+        body.put("Html-part", emailRequest.body());
         body.put("Recipients", recipients);
 
         restClient.post()

@@ -21,7 +21,7 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/me")
     public ResponseEntity<CommonResponse<UserInfo>> getUserInfo(@AuthenticationPrincipal AuthPrincipal authPrincipal) {
-        UUID userId = authPrincipal.id();
+        UUID userId = authPrincipal.userId();
         var response = CommonResponse.success(userService.getUserInfo(userId));
         return ResponseEntity.ok(response);
     }

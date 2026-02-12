@@ -1,6 +1,8 @@
 package com.memoize.api.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -24,6 +26,7 @@ public class Note {
     @Column(name = "id", columnDefinition = "uuid default gen_random_uuid()", updatable = false, nullable = false)
     private UUID id;
 
+    @NotEmpty
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -37,5 +40,6 @@ public class Note {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User owner;
 }

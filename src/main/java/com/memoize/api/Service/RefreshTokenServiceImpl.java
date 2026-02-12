@@ -41,6 +41,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    @Transactional
     public RefreshTokenResponse refreshAccessToken(HttpServletRequest request) {
         String refreshToken = null;
         Cookie[] cookies = request.getCookies();
@@ -65,6 +66,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    @Transactional
     public void logoutHandler(HttpServletRequest request) {
         String refreshToken = null;
         Cookie[] cookies = request.getCookies();
