@@ -1,6 +1,6 @@
 package com.memoize.api.Service;
 
-import com.memoize.api.Dto.UserInfo;
+import com.memoize.api.Dto.UserDto;
 import com.memoize.api.Entity.User;
 import com.memoize.api.Repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,8 +15,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    public UserInfo getUserInfo(UUID userId) {
+    public UserDto getUserInfo(UUID userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return UserInfo.fromEntity(user);
+        return UserDto.fromEntity(user);
     }
 }

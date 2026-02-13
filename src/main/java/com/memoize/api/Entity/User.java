@@ -18,7 +18,6 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString
 @Entity
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_id", columnList = "id"),
@@ -67,7 +66,6 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    @ToString.Exclude
     private Set<Note> notes = new HashSet<>();
 
     // for user details

@@ -2,6 +2,7 @@ package com.memoize.api.Controller;
 
 import com.memoize.api.Config.Security.AuthPrincipal;
 import com.memoize.api.Dto.CommonResponse;
+import com.memoize.api.Dto.NoteDto;
 import com.memoize.api.Dto.NoteModifyRequest;
 import com.memoize.api.Entity.Note;
 import com.memoize.api.Service.NoteService;
@@ -23,7 +24,7 @@ public class NoteControllerImpl implements NoteController {
     private final NoteService noteService;
     @Override
     @GetMapping
-    public ResponseEntity<CommonResponse<List<Note>>> fetchAllNotesOfUser(@AuthenticationPrincipal AuthPrincipal principal) {
+    public ResponseEntity<CommonResponse<List<NoteDto>>> fetchAllNotesOfUser(@AuthenticationPrincipal AuthPrincipal principal) {
         var notes = noteService.fetchNotesByUser(principal.userId());
         var response = CommonResponse.success(notes);
         return ResponseEntity.ok(response);
@@ -31,7 +32,7 @@ public class NoteControllerImpl implements NoteController {
 
     @Override
     @PostMapping
-    public ResponseEntity<CommonResponse<Note>> createNote(@RequestBody @Valid NoteModifyRequest request, @AuthenticationPrincipal AuthPrincipal principal) {
+    public ResponseEntity<CommonResponse<NoteDto>> createNote(@RequestBody @Valid NoteModifyRequest request, @AuthenticationPrincipal AuthPrincipal principal) {
         var newNote = noteService.createNote(request, principal.userId());
         var response = CommonResponse.success(newNote);
         return ResponseEntity.ok(response);
@@ -39,7 +40,7 @@ public class NoteControllerImpl implements NoteController {
 
     @Override
     @PutMapping("/{id}")
-    public ResponseEntity<CommonResponse<Note>> updateNote(@RequestBody @Valid NoteModifyRequest request, @PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
+    public ResponseEntity<CommonResponse<NoteDto>> updateNote(@RequestBody @Valid NoteModifyRequest request, @PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
         var updatedNote = noteService.updateNote(request, noteId, principal.userId());
         var response = CommonResponse.success(updatedNote);
         return ResponseEntity.ok(response);

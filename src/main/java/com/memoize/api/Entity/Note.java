@@ -15,7 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString
 @Entity
 @Table(name = "notes", indexes = {
         @Index(name = "idx_note_id", columnList = "id")
@@ -29,6 +28,10 @@ public class Note {
     @NotEmpty
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @NotEmpty
+    @Column(name = "preview", columnDefinition = "TEXT")
+    private String preview;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

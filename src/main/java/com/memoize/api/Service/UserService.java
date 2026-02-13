@@ -1,9 +1,9 @@
 package com.memoize.api.Service;
 
-import com.memoize.api.Dto.UserInfo;
+import com.memoize.api.Dto.UserDto;
 
 import java.util.UUID;
 
 public interface UserService {
-    UserInfo getUserInfo(UUID userId);
+    UserDto getUserInfo(UUID userId);
 }
