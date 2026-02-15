@@ -22,35 +22,52 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NoteControllerImpl implements NoteController {
     private final NoteService noteService;
+
     @Override
     @GetMapping
-    public ResponseEntity<CommonResponse<List<NoteDto>>> fetchAllNotesOfUser(@AuthenticationPrincipal AuthPrincipal principal) {
-        var notes = noteService.fetchNotesByUser(principal.userId());
+    public ResponseEntity<CommonResponse<List<NoteDto>>> fetchActiveNotesByUser(@AuthenticationPrincipal AuthPrincipal principal) {
+        var notes = noteService.fetchActiveNotesByUser(principal.userId());
         var response = CommonResponse.success(notes);
         return ResponseEntity.ok(response);
     }
 
     @Override
+    @GetMapping("/deleted")
+    public ResponseEntity<CommonResponse<List<NoteDto>>> fetchDeletedNotesByUser(@AuthenticationPrincipal AuthPrincipal principal) {
+        var deletedNotes = noteService.fetchDeletedNotesByUser(principal.userId());
+        var response = CommonResponse.success(deletedNotes);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     @PostMapping
-    public ResponseEntity<CommonResponse<NoteDto>> createNote(@RequestBody @Valid NoteModifyRequest request, @AuthenticationPrincipal AuthPrincipal principal) {
-        var newNote = noteService.createNote(request, principal.userId());
+    public ResponseEntity<CommonResponse<NoteDto>> createNoteByUser(@RequestBody @Valid NoteModifyRequest request, @AuthenticationPrincipal AuthPrincipal principal) {
+        var newNote = noteService.createNoteByUser(request, principal.userId());
         var response = CommonResponse.success(newNote);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @PutMapping("/{id}")
-    public ResponseEntity<CommonResponse<NoteDto>> updateNote(@RequestBody @Valid NoteModifyRequest request, @PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
-        var updatedNote = noteService.updateNote(request, noteId, principal.userId());
+    public ResponseEntity<CommonResponse<NoteDto>> updateNoteByUser(@RequestBody @Valid NoteModifyRequest request, @PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
+        var updatedNote = noteService.updateNoteByUser(request, noteId, principal.userId());
         var response = CommonResponse.success(updatedNote);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @DeleteMapping("/{id}")
-    public ResponseEntity<CommonResponse<Void>> deleteNote(@PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
-        noteService.deleteNoteByUser(noteId, principal.userId());
-        var response = CommonResponse.successWithoutData();
+    public ResponseEntity<CommonResponse<NoteDto>> deleteNoteByUser(@PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
+        var updatedNote = noteService.deleteNoteByUser(noteId, principal.userId());
+        var response = CommonResponse.success(updatedNote);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<CommonResponse<NoteDto>> restoreNoteByUser(@PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
+        var updatedNote = noteService.restoreNoteByUser(noteId, principal.userId());
+        var response = CommonResponse.success(updatedNote);
         return ResponseEntity.ok(response);
     }
 }

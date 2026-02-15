@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface NoteService {
-    NoteDto createNote(NoteModifyRequest request, UUID userId);
-    NoteDto updateNote(NoteModifyRequest request, UUID noteId, UUID userId);
-    List<NoteDto> fetchNotesByUser(UUID userId);
-    void deleteNoteByUser(UUID noteID, UUID userId);
+    NoteDto createNoteByUser(NoteModifyRequest request, UUID userId);
+    NoteDto updateNoteByUser(NoteModifyRequest request, UUID noteId, UUID userId);
+    List<NoteDto> fetchActiveNotesByUser(UUID userId);
+    List<NoteDto> fetchDeletedNotesByUser(UUID userId);
+    NoteDto deleteNoteByUser(UUID noteID, UUID userId);
+    NoteDto restoreNoteByUser(UUID noteID, UUID userId);
 }

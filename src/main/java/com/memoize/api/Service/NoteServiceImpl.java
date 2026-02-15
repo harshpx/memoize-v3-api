@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,7 +25,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional
-    public NoteDto createNote(NoteModifyRequest request, UUID userId) {
+    public NoteDto createNoteByUser(NoteModifyRequest request, UUID userId) {
         if (!userRepository.existsById(userId)) {
             throw new EntityNotFoundException("No user found");
         }
@@ -35,13 +36,12 @@ public class NoteServiceImpl implements NoteService {
                 .owner(currentUser)
                 .build();
         noteRepository.save(newNote);
-
         return NoteDto.fromEntity(newNote);
     }
 
     @Override
     @Transactional
-    public NoteDto updateNote(NoteModifyRequest request, UUID noteId, UUID userId) {
+    public NoteDto updateNoteByUser(NoteModifyRequest request, UUID noteId, UUID userId) {
         Note existingNote = noteRepository.findByIdAndOwnerId(noteId, userId).orElseThrow(() -> new EntityNotFoundException("No note found with the given id"));
         existingNote.setContent(request.content());
         existingNote.setPreview(request.preview());
@@ -50,14 +50,42 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
-    public List<NoteDto> fetchNotesByUser(UUID userId) {
-        List<Note> notes = noteRepository.findByOwnerIdOrderByUpdatedAtDesc(userId);
+    public List<NoteDto> fetchActiveNotesByUser(UUID userId) {
+        List<Note> notes = noteRepository.findActiveNotesByUser(userId);
         return notes.stream().map(NoteDto::fromEntity).toList();
     }
 
     @Override
+    public List<NoteDto> fetchDeletedNotesByUser(UUID userId) {
+        List<Note> deletedNotes = noteRepository.findDeletedNotesByUser(userId);
+        return deletedNotes.stream().map(NoteDto::fromEntity).toList();
+    }
+
+    @Override
     @Transactional
-    public void deleteNoteByUser(UUID noteID, UUID userId) {
-        noteRepository.deleteByIdAndOwnerId(noteID, userId);
+    public NoteDto deleteNoteByUser(UUID noteId, UUID userId) {
+        Note existingNote = noteRepository.findByIdAndOwnerId(noteId, userId)
+                .orElseThrow(() -> new EntityNotFoundException(("Note doesn't exist")));
+        if (existingNote.getIsDeleted()) {
+            throw new IllegalStateException("Note is already deleted");
+        }
+        existingNote.setIsDeleted(true);
+        existingNote.setDeletedAt(LocalDateTime.now());
+        noteRepository.save(existingNote);
+        return NoteDto.fromEntity(existingNote);
+    }
+
+    @Override
+    @Transactional
+    public NoteDto restoreNoteByUser(UUID noteId, UUID userId) {
+        Note existingNote = noteRepository.findByIdAndOwnerId(noteId, userId)
+                .orElseThrow(() -> new EntityNotFoundException(("Note doesn't exist")));
+        if (!existingNote.getIsDeleted()) {
+            throw new IllegalStateException("Note is already active!");
+        }
+        existingNote.setIsDeleted(false);
+        existingNote.setDeletedAt(null);
+        noteRepository.save(existingNote);
+        return NoteDto.fromEntity(existingNote);
     }
 }

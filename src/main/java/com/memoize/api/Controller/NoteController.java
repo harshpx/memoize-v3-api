@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface NoteController {
-    ResponseEntity<CommonResponse<List<NoteDto>>> fetchAllNotesOfUser(AuthPrincipal principal);
-    ResponseEntity<CommonResponse<NoteDto>> createNote(NoteModifyRequest request, AuthPrincipal principal);
-    ResponseEntity<CommonResponse<NoteDto>> updateNote(NoteModifyRequest request, UUID noteId, AuthPrincipal principal);
-    ResponseEntity<CommonResponse<Void>> deleteNote(UUID noteId, AuthPrincipal principal);
+    ResponseEntity<CommonResponse<List<NoteDto>>> fetchActiveNotesByUser(AuthPrincipal principal);
+    ResponseEntity<CommonResponse<List<NoteDto>>> fetchDeletedNotesByUser(AuthPrincipal principal);
+    ResponseEntity<CommonResponse<NoteDto>> createNoteByUser(NoteModifyRequest request, AuthPrincipal principal);
+    ResponseEntity<CommonResponse<NoteDto>> updateNoteByUser(NoteModifyRequest request, UUID noteId, AuthPrincipal principal);
+    ResponseEntity<CommonResponse<NoteDto>> deleteNoteByUser(UUID noteId, AuthPrincipal principal);
+    ResponseEntity<CommonResponse<NoteDto>> restoreNoteByUser(UUID noteId, AuthPrincipal principal);
 }
