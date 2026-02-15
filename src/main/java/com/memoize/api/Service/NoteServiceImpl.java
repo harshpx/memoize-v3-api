@@ -51,7 +51,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public List<NoteDto> fetchNotesByUser(UUID userId) {
-        List<Note> notes = noteRepository.findByOwnerId(userId);
+        List<Note> notes = noteRepository.findByOwnerIdOrderByUpdatedAtDesc(userId);
         return notes.stream().map(NoteDto::fromEntity).toList();
     }
 
