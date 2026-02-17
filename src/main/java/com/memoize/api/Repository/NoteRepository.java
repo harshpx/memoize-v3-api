@@ -2,6 +2,8 @@ package com.memoize.api.Repository;
 
 import com.memoize.api.Entity.Note;
 import com.memoize.api.Entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,22 +17,12 @@ import java.util.UUID;
 public interface NoteRepository extends JpaRepository<Note, UUID> {
     Optional<Note> findByIdAndOwnerId(UUID id, UUID ownerId);
 
-    List<Note> findByOwnerIdOrderByUpdatedAtDesc(UUID id);
+    @Query("""
+        SELECT n FROM Note n
+        WHERE n.owner.id = :userId AND n.isDeleted = :isDeleted
+    """)
+    Page<Note> findNotes(UUID userId, boolean isDeleted, Pageable pageable);
 
     @Modifying
     int deleteByIdAndOwnerId(UUID noteId, UUID userId);
-
-    @Query("""
-        SELECT n FROM Note n
-        WHERE n.owner.id = :userId AND n.isDeleted = false
-        ORDER BY n.updatedAt DESC
-    """)
-    List<Note> findActiveNotesByUser(UUID userId);
-
-    @Query("""
-        SELECT n FROM Note n
-        WHERE n.owner.id = :userId AND n.isDeleted = true
-        ORDER BY n.deletedAt DESC
-    """)
-    List<Note> findDeletedNotesByUser(UUID userId);
 }

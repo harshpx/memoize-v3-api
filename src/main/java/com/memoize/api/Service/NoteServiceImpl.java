@@ -10,6 +10,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -50,15 +52,9 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
-    public List<NoteDto> fetchActiveNotesByUser(UUID userId) {
-        List<Note> notes = noteRepository.findActiveNotesByUser(userId);
-        return notes.stream().map(NoteDto::fromEntity).toList();
-    }
-
-    @Override
-    public List<NoteDto> fetchDeletedNotesByUser(UUID userId) {
-        List<Note> deletedNotes = noteRepository.findDeletedNotesByUser(userId);
-        return deletedNotes.stream().map(NoteDto::fromEntity).toList();
+    public Page<NoteDto> fetchNotesByUser(UUID userId, boolean isDeleted, Pageable pageable) {
+        var notesPage = noteRepository.findNotes(userId, isDeleted, pageable);
+        return notesPage.map(NoteDto::fromEntity);
     }
 
     @Override

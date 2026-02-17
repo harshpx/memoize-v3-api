@@ -9,6 +9,10 @@ import com.memoize.api.Service.NoteService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -25,17 +29,18 @@ public class NoteControllerImpl implements NoteController {
 
     @Override
     @GetMapping
-    public ResponseEntity<CommonResponse<List<NoteDto>>> fetchActiveNotesByUser(@AuthenticationPrincipal AuthPrincipal principal) {
-        var notes = noteService.fetchActiveNotesByUser(principal.userId());
+    public ResponseEntity<CommonResponse<Page<NoteDto>>> fetchNotesByUser(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(name = "deleted", defaultValue = "false") boolean isDeleted,
+            @PageableDefault(
+                    size = 50,
+                    sort = "updatedAt",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
+    ) {
+        var notes = noteService.fetchNotesByUser(principal.userId(), isDeleted, pageable);
         var response = CommonResponse.success(notes);
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
-    @GetMapping("/deleted")
-    public ResponseEntity<CommonResponse<List<NoteDto>>> fetchDeletedNotesByUser(@AuthenticationPrincipal AuthPrincipal principal) {
-        var deletedNotes = noteService.fetchDeletedNotesByUser(principal.userId());
-        var response = CommonResponse.success(deletedNotes);
         return ResponseEntity.ok(response);
     }
 

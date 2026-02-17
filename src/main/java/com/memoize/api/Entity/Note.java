@@ -37,14 +37,15 @@ public class Note {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "is_archived", columnDefinition = "boolean default false")
-    private Boolean isArchived;
+    @Builder.Default
+    private Boolean isArchived = false;
 
     @Column(name = "is_deleted", columnDefinition = "boolean default false")
+    @Builder.Default
     private Boolean isDeleted = false;
 
     @Column(name = "deleted_at")
@@ -54,4 +55,18 @@ public class Note {
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
     private User owner;
+
+    @PrePersist
+    public void prePersist() {
+        this.updatedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+        this.isDeleted = false;
+        this.isArchived = false;
+        this.deletedAt = null;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
