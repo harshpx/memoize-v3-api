@@ -19,4 +19,5 @@ public interface NoteController {
     ResponseEntity<CommonResponse<NoteDto>> updateNoteByUser(NoteModifyRequest request, UUID noteId, AuthPrincipal principal);
     ResponseEntity<CommonResponse<NoteDto>> deleteNoteByUser(UUID noteId, AuthPrincipal principal);
     ResponseEntity<CommonResponse<NoteDto>> restoreNoteByUser(UUID noteId, AuthPrincipal principal);
+    ResponseEntity<CommonResponse<Integer>> permanentDeleteNoteByUser(UUID noteId, AuthPrincipal principal);
 }

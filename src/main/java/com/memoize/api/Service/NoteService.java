@@ -17,4 +17,6 @@ public interface NoteService {
     NoteDto deleteNoteByUser(UUID noteID, UUID userId);
 
     NoteDto restoreNoteByUser(UUID noteID, UUID userId);
+
+    int permanentDeleteNoteByUser(UUID noteID, UUID userId);
 }

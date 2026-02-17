@@ -75,4 +75,12 @@ public class NoteControllerImpl implements NoteController {
         var response = CommonResponse.success(updatedNote);
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<CommonResponse<Integer>> permanentDeleteNoteByUser(@PathVariable(name = "id") UUID noteId, @AuthenticationPrincipal AuthPrincipal principal) {
+        int result = noteService.permanentDeleteNoteByUser(noteId, principal.userId());
+        var response = CommonResponse.success(result);
+        return ResponseEntity.ok(response);
+    }
 }

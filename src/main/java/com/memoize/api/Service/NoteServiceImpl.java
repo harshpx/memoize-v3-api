@@ -84,4 +84,14 @@ public class NoteServiceImpl implements NoteService {
         noteRepository.save(existingNote);
         return NoteDto.fromEntity(existingNote);
     }
+
+    @Override
+    @Transactional
+    public int permanentDeleteNoteByUser(UUID noteID, UUID userId) {
+        int result = noteRepository.deleteByIdAndOwnerId(noteID, userId);
+        if (result == 0) {
+            throw new IllegalArgumentException("Note doesn't exist or is not deleted");
+        }
+        return result;
+    }
 }
