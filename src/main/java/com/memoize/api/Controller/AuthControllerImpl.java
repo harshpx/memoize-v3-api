@@ -34,6 +34,13 @@ public class AuthControllerImpl implements AuthController {
     }
 
     @Override
+    @PostMapping("/verify-email")
+    public ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(@RequestParam String email) {
+        authService.sendVerificationEmail(email, true);
+        return ResponseEntity.ok(CommonResponse.success(true));
+    }
+
+    @Override
     @PostMapping("/signup")
     public ResponseEntity<CommonResponse<AuthenticationResponse>> userSignup(@Valid @RequestBody SignupRequest signupRequest) {
         var authResponse = authService.signup(signupRequest);
@@ -77,16 +84,5 @@ public class AuthControllerImpl implements AuthController {
     @GetMapping("/check-email")
     public ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(@RequestParam(name = "email") String email) {
         return ResponseEntity.ok(CommonResponse.success(authService.isEmailAvailable(email)));
-    }
-
-    @Override
-    @PostMapping("/email-verification")
-    public ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(@RequestBody Map<String, String> emailData) {
-        String email = emailData.get("email");
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        authService.sendVerificationEmail(email, true);
-        return ResponseEntity.ok(CommonResponse.success(true));
     }
 }

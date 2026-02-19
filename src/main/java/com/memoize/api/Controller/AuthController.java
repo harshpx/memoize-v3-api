@@ -24,7 +24,7 @@ public interface AuthController {
 
     ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(String email);
 
-    ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(Map<String, String> email);
+    ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(String email);
 
 
 }

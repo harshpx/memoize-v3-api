@@ -18,7 +18,5 @@ spring:
           client-secret: ${GOOGLE_CLIENT_SECRET}
 jwt:
   secret: ${JWT_SECRET?JWT_SECRET is required}
-mailjet:
-  api:
-    key: ${MAILJET_API_KEY}
-    secret: ${MAILJET_API_SECRET}
+mail.api:
+    key: ${MAIL_API_KEY}

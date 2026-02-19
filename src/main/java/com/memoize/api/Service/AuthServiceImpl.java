@@ -77,7 +77,9 @@ public class AuthServiceImpl implements AuthService {
         if (!newRegistration && isEmailAvailable(email)) {
             throw new IllegalArgumentException("Email not found");
         }
-
+        if (verificationTokenRepository.existsValidTokenByEmail(email)) {
+            throw new IllegalStateException("A valid verification token already exists for this email, try after 10 minutes");
+        }
         var verificationToken = VerificationToken.builder()
                 .token(Common.encodeBase64(verificationCode)).email(email).build();
         verificationTokenRepository.saveAndFlush(verificationToken);
