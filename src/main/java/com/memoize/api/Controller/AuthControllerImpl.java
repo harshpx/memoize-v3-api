@@ -35,8 +35,8 @@ public class AuthControllerImpl implements AuthController {
 
     @Override
     @PostMapping("/verify-email")
-    public ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(@RequestParam String email) {
-        authService.sendVerificationEmail(email, true);
+    public ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(@RequestBody @Valid EmailRequest emailRequest) {
+        authService.sendVerificationEmail(emailRequest.email(), true);
         return ResponseEntity.ok(CommonResponse.success(true));
     }
 

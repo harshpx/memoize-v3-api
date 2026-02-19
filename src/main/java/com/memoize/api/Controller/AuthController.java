@@ -1,9 +1,6 @@
 package com.memoize.api.Controller;
 
-import com.memoize.api.Dto.AuthenticationResponse;
-import com.memoize.api.Dto.CommonResponse;
-import com.memoize.api.Dto.LoginRequest;
-import com.memoize.api.Dto.SignupRequest;
+import com.memoize.api.Dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Null;
@@ -24,7 +21,7 @@ public interface AuthController {
 
     ResponseEntity<CommonResponse<Boolean>> isEmailAvailable(String email);
 
-    ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(String email);
+    ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(EmailRequest emailRequest);
 
 
 }

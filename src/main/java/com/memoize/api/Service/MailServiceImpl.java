@@ -43,6 +43,5 @@ public class MailServiceImpl implements MailService {
                 }).onStatus(HttpStatusCode::is5xxServerError, (req, res) -> {
                     throw new RuntimeException("Mail service is currently unavailable. Please try again later.");
                 }).body(String.class);
-        System.out.println("Verification email sent successfully: " + response);
     }
 }
