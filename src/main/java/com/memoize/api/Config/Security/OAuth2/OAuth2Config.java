@@ -44,14 +44,11 @@ public class OAuth2Config {
             OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
             String provider  = oAuthToken.getAuthorizedClientRegistrationId();
             OAuth2UserInfo userInfo = getOAuth2UserInfo(oAuthUser, provider);
-            AuthenticationResponse authResponse = oAuth2Login(userInfo);
+            AuthenticationResponse authResponse = oAuth2Login(userInfo, provider);
             String refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
             ResponseCookie refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
-            ObjectMapper objectMapper = new ObjectMapper();
-            response.setStatus(200);
-            response.setContentType("application/json");
             response.setHeader("Set-Cookie", refreshTokenCookie.toString());
-            response.getWriter().write(objectMapper.writeValueAsString(CommonResponse.success(authResponse)));
+            response.sendRedirect("http://localhost:5173/oauth2redirect");
         };
     }
 
@@ -65,7 +62,7 @@ public class OAuth2Config {
     }
 
     @Transactional
-    protected AuthenticationResponse oAuth2Login(OAuth2UserInfo userInfo) {
+    protected AuthenticationResponse oAuth2Login(OAuth2UserInfo userInfo, String provider) {
         User existingUser = userRepository.findByIdentifier(userInfo.email()).orElse(null);
         AuthenticationResponse authResponse = null;
         if (existingUser != null) {
@@ -79,7 +76,7 @@ public class OAuth2Config {
                     .avatarUrl(userInfo.avatarUrl())
                     .password("")
                     .role(Role.USER)
-                    .authSource(AuthSource.GOOGLE)
+                    .authSource(AuthSource.fromString(provider))
                     .build();
             userRepository.save(newUser);
             String jwtToken = jwtService.generateToken(newUser.getId().toString(), newUser.getRole().name());
