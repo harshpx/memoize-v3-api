@@ -1,4 +1,5 @@
 package com.memoize.api.Config;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -9,10 +10,12 @@ import java.util.List;
 
 @Configuration
 public class CorsConfig {
+    @Value("${spring.app.client-url}")
+    private String clientUrl;
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://www.memoize.in"));
+        config.setAllowedOrigins(List.of(clientUrl));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);

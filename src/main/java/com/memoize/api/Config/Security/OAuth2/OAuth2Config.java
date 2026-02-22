@@ -11,6 +11,7 @@ import com.memoize.api.Repository.UserRepository;
 import com.memoize.api.Service.RefreshTokenService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseCookie;
@@ -27,9 +28,13 @@ public class OAuth2Config {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
+    @Value("${spring.app.client-url}")
+    private String clientUrl;
+
     @Bean
     public AuthenticationFailureHandler authenticationFailureHandler() {
         return (request, response, exception) -> {
+            System.out.println("OAuth2 Error: " + exception.getMessage());
             ObjectMapper objectMapper = new ObjectMapper();
             response.setStatus(401);
             response.setContentType("application/json");
@@ -48,7 +53,7 @@ public class OAuth2Config {
             String refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
             ResponseCookie refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
             response.setHeader("Set-Cookie", refreshTokenCookie.toString());
-            response.sendRedirect("http://localhost:5173/oauth2redirect");
+            response.sendRedirect(clientUrl + "/oauth2redirect");
         };
     }
 

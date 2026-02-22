@@ -4,6 +4,8 @@ spring:
 #  config:
 #    activate:
 #      on-profile: dev
+  app:
+    client-url: http://localhost:5173
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,7 +16,6 @@ spring:
 logging:
   level:
     root: INFO
-    com:
-      zaxxer:
-        hikari: DEBUG
-env: dev
+    com.zaxxer.hikari: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG

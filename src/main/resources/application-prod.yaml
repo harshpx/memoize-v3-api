@@ -4,6 +4,8 @@ spring:
 #  config:
 #    activate:
 #      on-profile: dev
+  app:
+    client-url: https://www.memoize.in
   jpa:
     hibernate:
       ddl-auto: validate
@@ -13,5 +15,7 @@ spring:
         format_sql: false
 logging:
   level:
-    root: WARN
-env: prod
+    root: INFO
+    com.zaxxer.hikari: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
