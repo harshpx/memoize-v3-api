@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: CI - Deploy API
+on:
+  push:
+    branches: ["main"]
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/harshpx/memoize-v3-api:latest
+            ghcr.io/harshpx/memoize-v3-api:sha-${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update K3s Deployment via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            kubectl set image deployment/memoize-api-deployment \
+            memoize-api-image=ghcr.io/harshpx/memoize-v3-api:sha-${{ github.sha }}

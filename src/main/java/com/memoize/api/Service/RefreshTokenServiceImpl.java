@@ -25,7 +25,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
-    private final Duration refreshTokenExpiration = Duration.ofMinutes(10);
+    private final Duration refreshTokenExpiration = Duration.ofDays(10);
 
     @Override
     @Transactional
@@ -34,7 +34,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken refreshTokenEntity = RefreshToken.builder()
                 .tokenHash(Common.PASSWORD_ENCODER.encode(secret))
                 .userId(userId)
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .expiresAt(LocalDateTime.now().plus(refreshTokenExpiration))
                 .build();
         refreshTokenRepository.save(refreshTokenEntity);
         return refreshTokenEntity.getTokenId().toString() + "." + secret;

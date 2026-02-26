@@ -32,7 +32,7 @@ public class RefreshToken {
     @PrePersist
     protected void prePersist() {
         if (this.expiresAt == null) {
-            this.expiresAt = LocalDateTime.now().plusMinutes(10);
+            this.expiresAt = LocalDateTime.now().plusDays(10);
         }
     }
 }
