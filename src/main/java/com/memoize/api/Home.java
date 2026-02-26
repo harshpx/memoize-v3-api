@@ -28,4 +28,5 @@ public class Home {
         var response = CommonResponse.success(data);
         return ResponseEntity.ok(response);
     }
+    // test comment to trigger pipeline
 }
