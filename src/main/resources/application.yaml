@@ -13,7 +13,7 @@ spring:
     password: ${DB_PASSWORD:?DB_PASSWORD is required}
     hikari:
       maximum-pool-size: 20
-      minimum-idle: 10         # to keep some pipes warm
+      minimum-idle: 5         # to keep some pipes warm
       idle-timeout: 300000     # Retire connections after 5 mins for being idle
       keepalive-time: 30000    # Ping Singapore every 30s to stay alive
       connection-timeout: 5000 # 5s wait; don't make users wait 30s
