@@ -2,6 +2,9 @@ server:
   port: 8086
   forward-headers-strategy: framework
 spring:
+  threads:
+    virtual:
+      enabled: true
   application:
     name: memoize-v3-api
   datasource:
@@ -9,8 +12,12 @@ spring:
     username: ${DB_USERNAME:?DB_USERNAME is required}
     password: ${DB_PASSWORD:?DB_PASSWORD is required}
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
+      maximum-pool-size: 12
+      minimum-idle: 6          # Match 1/2 to keep some pipes warm
+      idle-timeout: 300000     # Retire connections after 5 mins for being idle
+      keepalive-time: 30000    # Ping Singapore every 30s to stay alive
+      connection-timeout: 5000 # 5s wait; don't make users wait 30s
+      max-lifetime: 1800000    # Standard 30m refresh
   security:
     oauth2.client:
       registration:
@@ -20,4 +27,4 @@ spring:
 jwt:
   secret: ${JWT_SECRET?JWT_SECRET is required}
 mail.api:
-    key: ${MAIL_API_KEY}
+  key: ${MAIL_API_KEY}
