@@ -16,6 +16,6 @@ spring:
 logging:
   level:
     root: INFO
-    com.zaxxer.hikari: INFO
-    org.springframework.security: DEBUG
-    org.springframework.security.oauth2: DEBUG
+    com.zaxxer.hikari: WARN
+    org.springframework.security: INFO
+    org.springframework.security.oauth2: INFO
