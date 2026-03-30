@@ -20,7 +20,6 @@ import java.util.*;
 @Builder
 @Entity
 @Table(name = "users", indexes = {
-        @Index(name = "idx_user_id", columnList = "id"),
         @Index(name = "idx_user_username", columnList = "username"),
         @Index(name = "idx_user_email", columnList = "email")
 })
@@ -67,6 +66,9 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Set<Note> notes = new HashSet<>();
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private Set<Event> events = new HashSet<>();
 
     // for user details
     @Override

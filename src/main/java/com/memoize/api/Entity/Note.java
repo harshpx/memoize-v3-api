@@ -16,35 +16,34 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "notes", indexes = {
-        @Index(name = "idx_note_id", columnList = "id")
-})
+@Table(name = "notes")
 public class Note {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", columnDefinition = "uuid default gen_random_uuid()", updatable = false, nullable = false)
+    @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
     @NotEmpty
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "content", nullable = false)
     private String content;
 
     @NotEmpty
-    @Column(name = "preview", columnDefinition = "TEXT")
+    @Column(name = "preview")
     private String preview;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_archived", columnDefinition = "boolean default false")
+    @Column(name = "is_archived")
     @Builder.Default
     private Boolean isArchived = false;
 
-    @Column(name = "is_deleted", columnDefinition = "boolean default false")
+    @Column(name = "is_deleted")
     @Builder.Default
     private Boolean isDeleted = false;
 
@@ -52,21 +51,12 @@ public class Note {
     private LocalDateTime deletedAt;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(
+            name = "user_id",
+            referencedColumnName = "id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_notes_user")
+    )
     @JsonIgnore
     private User owner;
-
-    @PrePersist
-    public void prePersist() {
-        this.updatedAt = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
-        this.isDeleted = false;
-        this.isArchived = false;
-        this.deletedAt = null;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

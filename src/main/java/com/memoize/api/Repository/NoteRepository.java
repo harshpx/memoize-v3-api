@@ -21,7 +21,7 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
         SELECT n FROM Note n
         WHERE n.owner.id = :userId AND n.isDeleted = :isDeleted
     """)
-    Page<Note> findNotes(UUID userId, boolean isDeleted, Pageable pageable);
+    Page<Note> findNotesForUser(UUID userId, boolean isDeleted, Pageable pageable);
 
     @Modifying
     int deleteByIdAndOwnerId(UUID noteId, UUID userId);

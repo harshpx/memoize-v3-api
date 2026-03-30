@@ -1,6 +1,5 @@
 package com.memoize.api.Config.Security;
 
-import com.memoize.api.Entity.User;
 import com.memoize.api.Repository.UserRepository;
 import lombok.*;
 import org.jspecify.annotations.NonNull;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
     private final UserRepository userRepository;
+
     @Override
     @NonNull
     public UserDetails loadUserByUsername(@NonNull String identifier) throws UsernameNotFoundException {

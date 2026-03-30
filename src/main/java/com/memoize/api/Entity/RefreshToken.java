@@ -17,7 +17,7 @@ import java.util.UUID;
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "token_id", columnDefinition = "uuid default gen_random_uuid()", updatable = false, nullable = false)
+    @Column(name = "token_id", updatable = false, nullable = false)
     private UUID tokenId;
 
     @Column(name = "token_hash", nullable = false)

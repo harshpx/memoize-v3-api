@@ -53,7 +53,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public Page<NoteDto> fetchNotesByUser(UUID userId, boolean isDeleted, Pageable pageable) {
-        var notesPage = noteRepository.findNotes(userId, isDeleted, pageable);
+        var notesPage = noteRepository.findNotesForUser(userId, isDeleted, pageable);
         return notesPage.map(NoteDto::fromEntity);
     }
 
