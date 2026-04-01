@@ -31,4 +31,19 @@ public record EventDto(
                 .description(event.getDescription()).location(event.getLocation())
                 .createdAt(event.getCreatedAt()).updatedAt(event.getUpdatedAt()).build();
     }
+
+    public String toString() {
+        return "EventDto{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", start=" + start +
+                ", end=" + end +
+                ", eventType=" + eventType +
+                ", eventRepeat=" + eventRepeat +
+                ", description='" + description + '\'' +
+                ", location='" + location + '\'' +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
 }
