@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,13 +20,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
         SELECT e FROM Event e
         WHERE e.owner.id = :userId
     """)
-    Page<Event> findEventsForUser(UUID userId, Pageable pageable);
-
-    @Query("""
-        SELECT e from Event e
-        WHERE e.owner.id = :userId AND e.start > CURRENT_TIMESTAMP
-    """)
-    Page<Event> findUpcomingEventsForUser(UUID userId, Pageable pageable);
+    List<Event> findEventsForUser(UUID userId);
 
     @Modifying
     int deleteByIdAndOwnerId(UUID eventId, UUID userId);
