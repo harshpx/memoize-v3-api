@@ -1,0 +1,431 @@
+{
+  "info": {
+    "_postman_id": "f85efe2c-8504-4a12-be37-45993c812486",
+    "name": "Memoize",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "32750693"
+  },
+  "item": [
+    {
+      "name": "login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const responseData = pm.response.json();",
+              "",
+              "if (responseData?.data?.accessToken) {",
+              "    pm.environment.set(\"memoize-access-token\", responseData.data.accessToken);",
+              "    console.log(\"Memoize access token set successfully in environment\");",
+              "} else {",
+              "    console.log(\"No access token found in response\");",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"identifier\": \"{{test-user-1-identifier}}\",\n    \"password\": \"{{test-user-1-password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{memoize-local}}/auth/login",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "refresh",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "if (response?.data?.accessToken) {",
+              "    pm.environment.set(\"memoize-access-token\", response.data.accessToken);",
+              "    console.log(\"Access token refreshed\");",
+              "} else {",
+              "    console.log(\"Can not refresh the token, cookie expired\");",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{memoize-local}}/auth/refresh",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "send-verification",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"harsh.rzf@gmail.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{memoize-local}}/auth/verify-email",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "auth",
+            "verify-email"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "signup",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Harsh Priye\",\n    \"email\": \"harsh.rzf@gmail.com\",\n    \"password\": \"app1234#\",\n    \"username\": \"harsh\",\n    \"verificationCode\": \"Qzalu2\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{memoize-local}}/auth/signup",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{memoize-local}}/auth/logout",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "check-availability",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "localhost:8086/auth/check-email?email=harsh.rzf@hotmail.com",
+          "host": [
+            "localhost"
+          ],
+          "port": "8086",
+          "path": [
+            "auth",
+            "check-email"
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "harsh.rzf@hotmail.com"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "user-info",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "localhost:8086/user/me",
+          "host": [
+            "localhost"
+          ],
+          "port": "8086",
+          "path": [
+            "user",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "fetch-notes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}/notes?deleted=false",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "notes"
+          ],
+          "query": [
+            {
+              "key": "deleted",
+              "value": "false"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create-note",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"content\": \"note 4\",\n    \"preview\": \"<h1>Note 4</h1>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{memoize-local}}/notes",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "notes"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "update-note",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"{\\\"type\\\":\\\"doc\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"attrs\\\":{\\\"textAlign\\\":null},\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"my name is harsh priye!\\\"}]}]}\",\n  \"preview\": \"<p>my name is harsh priye!</p>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{memoize-local}}/notes/fa726015-3526-48ba-8dd2-cf7532aff500",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "notes",
+            "fa726015-3526-48ba-8dd2-cf7532aff500"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "delete-note",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "localhost:8086/notes/d0213d0f-8f11-4a20-8d19-b08788adef45",
+          "host": [
+            "localhost"
+          ],
+          "port": "8086",
+          "path": [
+            "notes",
+            "d0213d0f-8f11-4a20-8d19-b08788adef45"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "restore-note",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}/notes/d0213d0f-8f11-4a20-8d19-b08788adef45/restore",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "notes",
+            "d0213d0f-8f11-4a20-8d19-b08788adef45",
+            "restore"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "permanent-delete",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}/notes/605a86cc-16c8-42d9-9c6e-c5fa8e281ee6/permanent",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "notes",
+            "605a86cc-16c8-42d9-9c6e-c5fa8e281ee6",
+            "permanent"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "test",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}",
+          "host": [
+            "{{memoize-local}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{memoize-local}}/health",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Test",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    }
+  ]
+}
