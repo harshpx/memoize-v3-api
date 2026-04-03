@@ -3,8 +3,7 @@ package com.memoize.api.Service;
 import com.memoize.api.Dto.EventDto;
 import com.memoize.api.Dto.EventModifyRequest;
 import com.memoize.api.Dto.EventsByDate;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
 
 import java.util.List;
 import java.util.UUID;
