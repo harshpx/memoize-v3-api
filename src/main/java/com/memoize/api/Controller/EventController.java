@@ -2,11 +2,8 @@ package com.memoize.api.Controller;
 
 import com.memoize.api.Config.Security.AuthPrincipal;
 import com.memoize.api.Dto.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.UUID;
