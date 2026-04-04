@@ -13,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "refresh_tokens", schema = "public")
+@Table(name = "refresh_tokens")
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

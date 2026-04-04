@@ -19,7 +19,7 @@ import java.util.*;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "users", schema = "public", indexes = {
+@Table(name = "users", indexes = {
         @Index(name = "idx_user_username", columnList = "username"),
         @Index(name = "idx_user_email", columnList = "email")
 })

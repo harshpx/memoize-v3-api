@@ -12,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "verification_tokens", schema = "public")
+@Table(name = "verification_tokens")
 public class VerificationToken {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
