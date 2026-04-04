@@ -8,7 +8,7 @@ spring:
     client-url: https://www.memoize.in
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
