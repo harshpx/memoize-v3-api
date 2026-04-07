@@ -4,6 +4,7 @@ import com.memoize.api.Entity.Event;
 import com.memoize.api.Enum.EventRepeat;
 import com.memoize.api.Enum.EventType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -14,14 +15,14 @@ import java.util.UUID;
 public record EventDto(
         @NotBlank UUID id,
         @NotBlank String title,
-        @NotBlank OffsetDateTime start,
-        @NotBlank OffsetDateTime end,
-        @NotBlank EventType eventType,
-        @NotBlank EventRepeat eventRepeat,
+        @NotNull OffsetDateTime start,
+        @NotNull OffsetDateTime end,
+        @NotNull EventType eventType,
+        @NotNull EventRepeat eventRepeat,
         String description,
         String location,
-        @NotBlank LocalDateTime createdAt,
-        @NotBlank LocalDateTime updatedAt
+        @NotNull LocalDateTime createdAt,
+        @NotNull LocalDateTime updatedAt
 ) {
     public static EventDto fromEntity(Event event) {
         return EventDto.builder()

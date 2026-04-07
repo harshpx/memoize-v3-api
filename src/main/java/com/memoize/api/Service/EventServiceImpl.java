@@ -63,6 +63,7 @@ public class EventServiceImpl implements EventService {
                 .start(request.start())
                 .end(request.end())
                 .eventType(request.eventType())
+                .eventRepeat(request.eventRepeat())
                 .description(request.description())
                 .location(request.location())
                 .build();
@@ -78,6 +79,7 @@ public class EventServiceImpl implements EventService {
         existingEvent.setStart(request.start());
         existingEvent.setEnd(request.end());
         existingEvent.setEventType(request.eventType());
+        existingEvent.setEventRepeat(request.eventRepeat());
         if (request.description() != null) {
             existingEvent.setDescription(request.description());
         }

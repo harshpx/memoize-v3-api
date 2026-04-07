@@ -37,7 +37,7 @@ public class Event {
     @Column(name = "start", nullable = false)
     private OffsetDateTime start;
 
-    @Column(name = "end", nullable = false)
+    @Column(name = "\"end\"", nullable = false)
     private OffsetDateTime end;
 
     @Column(name = "event_type", length = 50, nullable = false)
@@ -67,4 +67,19 @@ public class Event {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
