@@ -16,10 +16,10 @@ public class MailServiceImpl implements MailService {
             @Value("${mail.api.key}") String mailApiKey
     ) {
         this.restClient = RestClient.builder()
-                .baseUrl("https://api.brevo.com/v3/smtp/email")
+                .baseUrl("https://send.api.mailtrap.io/api/send")
                 .defaultHeaders(h -> {
-                    h.add("api-key", mailApiKey);
-                    h.add("content-type", "application/json");
+                    h.add("Authorization", "Bearer " + mailApiKey);
+                    h.add("Content-Type", "application/json");
                 })
                 .build();
     }
@@ -29,11 +29,12 @@ public class MailServiceImpl implements MailService {
         if (email == null || email.isBlank() || verificationCode == null || verificationCode.isBlank()) {
             throw new RuntimeException("Recipient email address and verification code is required.");
         }
+
         var body = Map.of(
-                "sender", Map.of("email", "support@memoize.in", "name", "Memoize Team"),
+                "from", Map.of("email", "support@memoize.in", "name", "Memoize Team"),
                 "to", List.of(Map.of("email", email)),
                 "subject", "Memoize email verification",
-                "htmlContent", "<div style='font-size:16px;'>Your email verification code is: <strong>" + verificationCode + "</strong></div>" + "<div>This code will only be active for 10 minutes (you will only be able to generate a new code once this expires)</div>"
+                "text", "Your email verification code is: " + verificationCode + "\n\nThis code will only be active for 10 minutes (you will only be able to generate a new code once this expires)"
         );
 
         String response = restClient.post()
