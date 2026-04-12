@@ -45,10 +45,6 @@ public class OAuth2Config {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            String userAgent = request.getHeader("User-Agent");
-            System.out.println("Oauth login by User agent: " + userAgent);
-            String refrer = request.getHeader("Referer");
-            System.out.println("Oauth login by Referer: " + refrer);
             OAuth2AuthenticationToken oAuthToken = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
             String provider = oAuthToken.getAuthorizedClientRegistrationId();
