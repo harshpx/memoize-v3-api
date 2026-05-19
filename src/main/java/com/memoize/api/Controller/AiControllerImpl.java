@@ -28,7 +28,7 @@ public class AiControllerImpl implements AiController{
             @PageableDefault(
                     size = 50,
                     sort = "createdAt",
-                    direction = Sort.Direction.ASC
+                    direction = Sort.Direction.DESC
             )
             Pageable pageable
     ) {

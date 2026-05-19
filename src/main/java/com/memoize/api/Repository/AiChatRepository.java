@@ -16,7 +16,6 @@ public interface AiChatRepository extends JpaRepository<AiChat, UUID> {
         select new com.memoize.api.Dto.AiChatDto(aic.id, aic.user.id, aic.content, aic.type, aic.createdAt)
         from AiChat aic
         where aic.user.id = :userId
-        order by aic.createdAt desc
     """)
     Page<AiChatDto> fetchChatsOfUser(UUID userId, Pageable pageable);
 }
