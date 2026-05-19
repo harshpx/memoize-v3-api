@@ -10,10 +10,11 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -38,8 +39,8 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     @Override
-    public List<AiChatDto> getLlmChatsOfUser(UUID userId) {
-        return aiChatRepository.fetchChatsOfUser(userId);
+    public Page<AiChatDto> getLlmChatsOfUser(UUID userId, Pageable pageable) {
+        return aiChatRepository.fetchChatsOfUser(userId, pageable);
     }
 
     @Override

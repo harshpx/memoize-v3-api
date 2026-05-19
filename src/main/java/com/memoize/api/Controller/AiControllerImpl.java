@@ -5,13 +5,15 @@ import com.memoize.api.Dto.AiChatDto;
 import com.memoize.api.Dto.CommonResponse;
 import com.memoize.api.Service.AiChatService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/ai")
@@ -20,9 +22,17 @@ public class AiControllerImpl implements AiController{
     private final AiChatService aiChatService;
 
     @Override
-    @GetMapping("/chat/all")
-    public ResponseEntity<CommonResponse<List<AiChatDto>>> getLlmChatsOfUser(@AuthenticationPrincipal AuthPrincipal principal) {
-        return ResponseEntity.ok(CommonResponse.success(aiChatService.getLlmChatsOfUser(principal.userId())));
+    @GetMapping("/chats")
+    public ResponseEntity<CommonResponse<Page<AiChatDto>>> getLlmChatsOfUser(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @PageableDefault(
+                    size = 50,
+                    sort = "createdAt",
+                    direction = Sort.Direction.ASC
+            )
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(CommonResponse.success(aiChatService.getLlmChatsOfUser(principal.userId(), pageable)));
     }
 
     @Override
