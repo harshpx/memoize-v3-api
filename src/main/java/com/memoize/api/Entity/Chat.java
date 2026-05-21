@@ -4,10 +4,9 @@ import com.memoize.api.Enum.ChatType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.generator.EventType;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -18,36 +17,36 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "ai_chats")
-public class AiChat {
+@Table(name = "chats")
+public class Chat {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false)
     private UUID id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(
-        name = "user_id",
-        referencedColumnName = "id",
-        nullable = false,
-        foreignKey = @ForeignKey(name = "fk_chat_user")
+            name = "conversation_id",
+            referencedColumnName = "id",
+            foreignKey = @ForeignKey(name = "fk_chats_conversation")
     )
-    private User user;
+    private Conversation conversation;
 
-    @NotNull
-    @Column(name = "content", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "content", nullable = false)
     private String content;
 
-    @NotNull
-    @Column(name = "type", nullable = false, length = 10)
+    @Column(name = "type", nullable = false)
     @Enumerated(EnumType.STRING)
     private ChatType type;
 
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-
+    @PrePersist
+    void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
