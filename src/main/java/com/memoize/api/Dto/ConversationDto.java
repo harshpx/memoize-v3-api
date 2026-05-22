@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Builder
-public record ConversationDto(UUID id, UUID userId, String name, String summary, boolean isProperName, LocalDateTime createdAt, LocalDateTime updatedAt) {
+public record ConversationDto(UUID id, UUID userId, String name, String summary, boolean isProperName, boolean isNew, LocalDateTime createdAt, LocalDateTime updatedAt) {
     public static ConversationDto fromEntity(Conversation conversation) {
         return ConversationDto.builder()
                 .id(conversation.getId())
@@ -15,6 +15,7 @@ public record ConversationDto(UUID id, UUID userId, String name, String summary,
                 .name(conversation.getName())
                 .summary(conversation.getSummary())
                 .isProperName(conversation.isProperName())
+                .isNew(conversation.isNew())
                 .createdAt(conversation.getCreatedAt())
                 .updatedAt(conversation.getUpdatedAt())
                 .build();

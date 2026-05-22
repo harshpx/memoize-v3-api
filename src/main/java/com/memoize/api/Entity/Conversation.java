@@ -42,6 +42,9 @@ public class Conversation {
     @Column(name = "is_proper_name", nullable = false)
     private boolean isProperName;
 
+    @Column(name = "is_new", nullable = false)
+    private boolean isNew;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

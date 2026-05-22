@@ -1,6 +1,7 @@
 package com.memoize.api.Config;
 
 import com.memoize.api.Dto.ErrorResponse;
+import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,11 @@ public class ErrorHandler {
     public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex) {
         var errorResponse = ErrorResponse.of(ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> handleEntityAlreadyExists(EntityExistsException ex) {
+        var errorResponse = ErrorResponse.of(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> handleAll(Exception ex) {

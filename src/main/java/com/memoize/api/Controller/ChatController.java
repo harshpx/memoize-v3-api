@@ -14,6 +14,7 @@ public interface ChatController {
     ResponseEntity<CommonResponse<List<ConversationDto>>> getConversationsOfUser(AuthPrincipal principal);
     ResponseEntity<CommonResponse<ConversationDto>> createNewConversationForUser(AuthPrincipal principal);
     ResponseEntity<CommonResponse<ConversationDto>> getConversationByIdAndUser(UUID conversationId, AuthPrincipal principal);
+    ResponseEntity<CommonResponse<Integer>> deleteConversationByIdAndUser(UUID conversationId, AuthPrincipal principal);
     ResponseEntity<CommonResponse<List<ChatDto>>> getChatsOfConversation(UUID conversationId, AuthPrincipal principal);
     ResponseEntity<Flux<String>> askLLM(String query, UUID conversationId, AuthPrincipal principal);
 }

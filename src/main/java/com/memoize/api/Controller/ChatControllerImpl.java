@@ -37,7 +37,13 @@ public class ChatControllerImpl implements ChatController {
     @Override
     @PostMapping("/conversation")
     public ResponseEntity<CommonResponse<ConversationDto>> createNewConversationForUser(@AuthenticationPrincipal AuthPrincipal principal) {
-        return ResponseEntity.ok(CommonResponse.success(conversationService.createConversationForUser(principal.userId())));
+        return ResponseEntity.ok(CommonResponse.success(conversationService.createNewConversationForUser(principal.userId())));
+    }
+
+    @Override
+    @DeleteMapping("/conversation/{id}")
+    public ResponseEntity<CommonResponse<Integer>> deleteConversationByIdAndUser(@PathVariable(name = "id") UUID conversationId, @AuthenticationPrincipal AuthPrincipal principal) {
+        return ResponseEntity.ok(CommonResponse.success(conversationService.deleteConversationByIdAndUser(conversationId, principal.userId())));
     }
 
     @Override
