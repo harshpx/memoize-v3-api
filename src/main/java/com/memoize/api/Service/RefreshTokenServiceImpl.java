@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -55,7 +56,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         }
         RefreshToken oldRefreshTokenEntity = validateAndGetRefreshTokenEntity(refreshToken);
         UUID userId = oldRefreshTokenEntity.getUserId();
-        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new BadCredentialsException("User not found"));
         String newJwtToken = jwtService.generateToken(userId.toString(), user.getRole().name());
         refreshTokenRepository.delete(oldRefreshTokenEntity);
         String newRefreshToken = generateRefreshToken(userId);
@@ -101,17 +102,17 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     // helpers
-    public RefreshToken validateAndGetRefreshTokenEntity(String token) throws IllegalArgumentException {
-        if (token == null || token.isBlank()) throw new IllegalArgumentException("No refresh token present");
+    public RefreshToken validateAndGetRefreshTokenEntity(String token) throws BadCredentialsException {
+        if (token == null || token.isBlank()) throw new BadCredentialsException("No refresh token present");
         String[] parts = token.split("\\.");
-        if (parts.length != 2) throw new IllegalArgumentException("Invalid refresh token");
+        if (parts.length != 2) throw new BadCredentialsException("Invalid refresh token");
         UUID tokenId = UUID.fromString(parts[0]);
         String rawSecret = parts[1];
 
         return refreshTokenRepository.findById(tokenId)
                 .filter(rt -> rt.getExpiresAt().isAfter(LocalDateTime.now()))
                 .filter(rt -> Common.PASSWORD_ENCODER.matches(rawSecret, rt.getTokenHash()))
-                .filter(rt -> userRepository.existsById(rt.getUserId())).orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+                .filter(rt -> userRepository.existsById(rt.getUserId())).orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
     }
 
     @Transactional

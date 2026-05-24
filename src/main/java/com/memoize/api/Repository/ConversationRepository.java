@@ -18,7 +18,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
         select new com.memoize.api.Dto.ConversationDto(
             c.id, c.user.id, c.name, c.summary, c.isProperName, c.isNew, c.createdAt, c.updatedAt
         )
-        from Conversation c where c.user.id = :userId order by c.updatedAt desc
+        from Conversation c where c.user.id = :userId order by c.createdAt desc
     """)
     List<ConversationDto> fetchConversationsOfUser(UUID userId);
 

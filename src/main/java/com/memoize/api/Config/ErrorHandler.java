@@ -5,12 +5,18 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 public class ErrorHandler {
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> handleUnauthorized(BadCredentialsException ex) {
+        var errorResponse = ErrorResponse.of(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> handleValidation(BindException ex) {
         var errorResponse = ErrorResponse.of(ex.getMessage());

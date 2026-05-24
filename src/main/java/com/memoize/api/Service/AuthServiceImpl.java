@@ -12,6 +12,7 @@ import com.memoize.api.Repository.VerificationTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResponse signup(SignupRequest request) {
         if (!verifyCode(request.email(), request.verificationCode())) {
-            throw new IllegalArgumentException("Invalid verification code");
+            throw new BadCredentialsException("Invalid verification code");
         }
         User user = User.builder()
                 .name(request.name())

@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface ChatRepository extends JpaRepository<Chat, UUID> {
     @Query("""
         select new com.memoize.api.Dto.ChatDto(c.id, c.conversation.id, c.content, c.type, c.createdAt)
-        from Chat c where c.conversation.id = :id
+        from Chat c where c.conversation.id = :id order by c.createdAt asc
     """)
     List<ChatDto> fetchChatsByConversationId(@Param("id") UUID id);
 
