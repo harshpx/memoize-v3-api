@@ -1,7 +1,6 @@
 package com.memoize.api.Service;
 
 import com.memoize.api.Config.Common;
-import com.memoize.api.Dto.AuthenticationResponse;
 import com.memoize.api.Dto.RefreshTokenResponse;
 import com.memoize.api.Entity.RefreshToken;
 import com.memoize.api.Entity.User;
