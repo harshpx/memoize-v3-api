@@ -49,13 +49,11 @@ public class ChatServiceImpl implements ChatService {
         StringBuilder answerBuilder = new StringBuilder();
         return chatClient.prompt(queryPrompt).stream().content()
                 .doOnNext(answerBuilder::append)
-                .doOnComplete(() -> {
-                    CompletableFuture.runAsync(() -> {
-                        String fullAnswer = answerBuilder.toString();
-                        this.saveChat(fullAnswer, conversationId, ChatType.ANSWER);
-                        this.manageConversation(conversationId, query, fullAnswer);
-                    });
-                });
+                .doOnComplete(() -> CompletableFuture.runAsync(() -> {
+                    String fullAnswer = answerBuilder.toString();
+                    this.saveChat(fullAnswer, conversationId, ChatType.ANSWER);
+                    this.manageConversation(conversationId, query, fullAnswer);
+                }));
     }
 
     // helpers
