@@ -21,6 +21,9 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Configuration
 @RequiredArgsConstructor
 public class OAuth2Config {
@@ -49,11 +52,19 @@ public class OAuth2Config {
             OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
             String provider = oAuthToken.getAuthorizedClientRegistrationId();
             OAuth2UserInfo userInfo = getOAuth2UserInfo(oAuthUser, provider);
-            AuthenticationResponse authResponse = oAuth2Login(userInfo, provider);
-            String refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
-            ResponseCookie refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
-            response.setHeader("Set-Cookie", refreshTokenCookie.toString());
-            response.sendRedirect(clientUrl + "/oauth2redirect");
+            AuthenticationResponse authResponse = null;
+            try {
+                authResponse = oAuth2Login(userInfo, provider);
+                String refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
+                ResponseCookie refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
+                response.setHeader("Set-Cookie", refreshTokenCookie.toString());
+                response.sendRedirect(clientUrl + "/oauth2redirect");
+            } catch (Exception ex) {
+                response.setStatus(401);
+                String rawError = ex.getMessage() != null ? ex.getMessage() : "OAuth authentication failed";
+                String encodedError = URLEncoder.encode(rawError, StandardCharsets.UTF_8);
+                response.sendRedirect(clientUrl + "/oauth2redirect?error=" + encodedError);
+            }
         };
     }
 
@@ -66,11 +77,14 @@ public class OAuth2Config {
         throw new IllegalArgumentException("Unsupported OAuth2 provider: " + provider);
     }
 
-    @Transactional
+
     protected AuthenticationResponse oAuth2Login(OAuth2UserInfo userInfo, String provider) {
         User existingUser = userRepository.findByIdentifier(userInfo.email()).orElse(null);
         AuthenticationResponse authResponse = null;
         if (existingUser != null) {
+            if (!provider.equalsIgnoreCase(existingUser.getAuthSource().toString())) {
+                throw new IllegalArgumentException("This email is registered in Memoize with a different AuthSource");
+            }
             String jwtToken = jwtService.generateToken(existingUser.getId().toString(), existingUser.getRole().name());
             authResponse = AuthenticationResponse.of(jwtToken, existingUser.getId());
         } else {
@@ -83,7 +97,7 @@ public class OAuth2Config {
                     .role(Role.USER)
                     .authSource(AuthSource.fromString(provider))
                     .build();
-            userRepository.save(newUser);
+            userRepository.saveAndFlush(newUser);
             String jwtToken = jwtService.generateToken(newUser.getId().toString(), newUser.getRole().name());
             authResponse = AuthenticationResponse.of(jwtToken, newUser.getId());
         }
