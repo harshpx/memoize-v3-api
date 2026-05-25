@@ -2,14 +2,12 @@ package com.memoize.api.Config.Security.OAuth2;
 
 import com.memoize.api.Service.JwtService;
 import com.memoize.api.Dto.AuthenticationResponse;
-import com.memoize.api.Dto.CommonResponse;
 import com.memoize.api.Dto.ErrorResponse;
 import com.memoize.api.Entity.User;
 import com.memoize.api.Enum.AuthSource;
 import com.memoize.api.Enum.Role;
 import com.memoize.api.Repository.UserRepository;
 import com.memoize.api.Service.RefreshTokenService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -52,9 +50,8 @@ public class OAuth2Config {
             OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
             String provider = oAuthToken.getAuthorizedClientRegistrationId();
             OAuth2UserInfo userInfo = getOAuth2UserInfo(oAuthUser, provider);
-            AuthenticationResponse authResponse = null;
             try {
-                authResponse = oAuth2Login(userInfo, provider);
+                AuthenticationResponse authResponse = oAuth2Login(userInfo, provider);
                 String refreshToken = refreshTokenService.generateRefreshToken(authResponse.userId());
                 ResponseCookie refreshTokenCookie = refreshTokenService.createRefreshTokenCookie(refreshToken);
                 response.setHeader("Set-Cookie", refreshTokenCookie.toString());
