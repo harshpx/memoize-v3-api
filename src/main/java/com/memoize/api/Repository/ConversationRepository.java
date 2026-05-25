@@ -16,11 +16,12 @@ import java.util.UUID;
 public interface ConversationRepository extends JpaRepository<Conversation, UUID> {
     @Query("""
         select new com.memoize.api.Dto.ConversationDto(
-            c.id, c.user.id, c.name, c.summary, c.isProperName, c.isNew, c.createdAt, c.updatedAt
+            c.id, c.user.id, c.name, c.summary, c.recentChats,
+            c.isProperName, c.isNew, c.createdAt, c.updatedAt
         )
-        from Conversation c where c.user.id = :userId order by c.createdAt desc
+        from Conversation c where c.user.id = :userId order by c.isNew desc, c.updatedAt desc
     """)
-    List<ConversationDto> fetchConversationsOfUser(UUID userId);
+    List<ConversationDto> fetchConversationsOfUser(@Param("userId") UUID userId);
 
     boolean existsByIdAndUserId(UUID id, UUID userId);
 
@@ -28,9 +29,6 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
 
     @Query("select count(c) > 0 from Conversation c where c.isNew = true and c.user.id = :userId")
     boolean newConversationExistsForUser(@Param("userId") UUID userId);
-
-    @Query("select c.summary from Conversation c where c.id = :id")
-    Optional<String> findSummaryById(@Param("id") UUID id);
 
     @Modifying
     int deleteByIdAndUserId(UUID id, UUID userId);

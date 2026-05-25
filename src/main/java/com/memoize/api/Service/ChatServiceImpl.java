@@ -1,5 +1,6 @@
 package com.memoize.api.Service;
 
+import com.memoize.api.Config.Common;
 import com.memoize.api.Dto.ChatDto;
 import com.memoize.api.Entity.Chat;
 import com.memoize.api.Entity.Conversation;
@@ -7,17 +8,17 @@ import com.memoize.api.Enum.ChatType;
 import com.memoize.api.Repository.ChatRepository;
 import com.memoize.api.Repository.ConversationRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
@@ -41,19 +42,18 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public Flux<String> queryLlmStream(String query, UUID conversationId, UUID userId) {
-        if (!isValidConversation(conversationId, userId)) {
-            throw new IllegalArgumentException("Invalid/Incorrect conversationId user combination");
-        }
-        String queryPrompt = buildQueryWithContext(query, conversationId);
-        this.saveChat(query, conversationId, ChatType.QUESTION);
+        Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
+        String queryPrompt = buildQueryWithContext(query, conversation);
+        this.saveChat(query, conversation, ChatType.QUESTION);
         StringBuilder answerBuilder = new StringBuilder();
         return chatClient.prompt(queryPrompt).stream().content()
                 .doOnNext(answerBuilder::append)
-                .doOnComplete(() -> {
+                .doOnComplete(() -> CompletableFuture.runAsync(() -> {
                     String fullAnswer = answerBuilder.toString();
-                    this.saveChat(fullAnswer, conversationId, ChatType.ANSWER);
-                    this.manageConversation(conversationId, query, fullAnswer);
-                });
+                    this.saveChat(fullAnswer, conversation, ChatType.ANSWER);
+                    this.manageConversation(conversation, query, fullAnswer);
+                }));
     }
 
     // helpers
@@ -61,34 +61,51 @@ public class ChatServiceImpl implements ChatService {
         return conversationRepository.existsByIdAndUserId(conversationId, userId);
     }
 
-    private void saveChat(String content, UUID conversationId, ChatType chatType) {
+    private void saveChat(String content, Conversation conversation, ChatType chatType) {
         try {
-            Conversation conversation = conversationRepository.findById(conversationId)
-                    .orElseThrow(() -> new EntityNotFoundException("Invalid/Incorrect conversationId user combination"));
             Chat chat = Chat.builder().conversation(conversation).content(content).type(chatType).build();
             chatRepository.saveAndFlush(chat);
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            log.error(ex.getMessage());
         }
     }
 
-    private void manageConversation(UUID conversationId, String currentQuery, String currentResponse) {
+    private void manageConversation(Conversation conversation, String currentQuery, String currentResponse) {
         try {
-            Conversation conversation = conversationRepository.findById(conversationId).orElseThrow(() ->  new EntityNotFoundException("conversation not found"));
+            String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
             String summary = conversation.getSummary();
-            List<ChatDto> recentChats = chatRepository.fetchRecentChatsByConversationId(conversationId, PageRequest.of(0, 6)).reversed();
-            String updatedSummary = generateUpdatedSummary(summary, recentChats);
-            conversation.setSummary(updatedSummary);
+            CompletableFuture<String> updatedSummaryFuture = CompletableFuture.supplyAsync(() -> generateUpdatedSummary(summary, recentChats));
+            CompletableFuture<String> generatedNameFuture = null;
             if (!conversation.isProperName()) {
-                String generatedName = generateNameForConversation(currentQuery, currentResponse);
-                conversation.setName(generatedName);
+                generatedNameFuture = CompletableFuture.supplyAsync(() -> generateNameForConversation(currentQuery, currentResponse));
+            }
+            conversation.setSummary(updatedSummaryFuture.join());
+            if (generatedNameFuture != null) {
+                conversation.setName(generatedNameFuture.join());
                 conversation.setProperName(true);
             }
+            conversation.setRecentChats(recentChats);
             conversation.setNew(false);
             conversationRepository.saveAndFlush(conversation);
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            log.error(ex.getMessage());
         }
+    }
+
+    private String updateRecentChats(Conversation conversation, String currentQuery, String currentResponse) {
+        String recentChatString = conversation.getRecentChats() != null ? conversation.getRecentChats() : "";
+        Queue<String> recentChatsQueue = Arrays.stream(recentChatString.split(Common.DELIMITER))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(ArrayDeque::new));
+        int size = recentChatsQueue.size();
+        if (size >= 6) {
+            for (int i = 0; i < 2; i++) {
+                recentChatsQueue.poll();
+            }
+        }
+        recentChatsQueue.offer("User: " + currentQuery);
+        recentChatsQueue.offer("Assistant: " + currentResponse);
+        return String.join(Common.DELIMITER, recentChatsQueue);
     }
 
     private String generateNameForConversation(String firstQuery, String firstResponse) {
@@ -117,15 +134,14 @@ public class ChatServiceImpl implements ChatService {
         return (input == null || input.isBlank()) ? "None" : input;
     }
 
-    private String buildQueryWithContext(String query, UUID conversationId) {
-        String rollingSummary = conversationRepository.findSummaryById(conversationId).orElse("");
-        List<ChatDto> recentChats = chatRepository.fetchRecentChatsByConversationId(conversationId, PageRequest.of(0, 6)).reversed();
-        String chatsFormatted = recentChats.stream()
-                .map(chat -> (chat.type() == ChatType.QUESTION ? "User: " : "Assistant: ") + chat.content())
+    private String buildQueryWithContext(String query, Conversation conversation) {
+        String rollingSummary = conversation.getSummary();
+        String recentChats = conversation.getRecentChats() != null ? conversation.getRecentChats() : "";
+        String chatsFormatted = Arrays.stream(recentChats.split(Common.DELIMITER))
+                .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining("\n"));
-        return """
-            You are a helpful AI assistant.
 
+        return """
             Conversation summary (long-term context):
             %s
 
@@ -146,12 +162,10 @@ public class ChatServiceImpl implements ChatService {
         """.formatted(safe(rollingSummary), safe(chatsFormatted), safe(query));
     }
 
-    private String generateUpdatedSummary(String previousSummary, List<ChatDto> recentChats) {
-        String chatsFormatted = recentChats.stream()
-                .map(chat -> (chat.type() == ChatType.QUESTION ? "User: " : "Assistant: " + chat.content()))
-                .collect(Collectors.joining("\n"));
+    private String generateUpdatedSummary(String previousSummary, String recentChats) {
+        String[] temp = recentChats.split(Common.DELIMITER);
+        recentChats = String.join("\n", temp);
         String prompt = """
-            You are a helpful AI assistant.
             You are maintaining a conversation summary using:
 
             Previous Summary:
@@ -170,7 +184,7 @@ public class ChatServiceImpl implements ChatService {
             - Output ONLY the updated summary
 
             Updated Summary:
-        """.formatted(safe(previousSummary), safe(chatsFormatted));
+        """.formatted(safe(previousSummary), safe(recentChats));
         return chatClient.prompt(prompt).call().content();
     }
 }

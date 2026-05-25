@@ -39,6 +39,9 @@ public class Conversation {
     @Column(name = "summary")
     private String summary;
 
+    @Column(name = "recent_chats")
+    private String recentChats;
+
     @Column(name = "is_proper_name", nullable = false)
     private boolean isProperName;
 

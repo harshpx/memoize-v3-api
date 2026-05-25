@@ -10,6 +10,7 @@ import java.util.Base64;
 public class Common {
     public static final String[] PUBLIC_ENDPOINTS = {"/", "/login", "/auth/**"};
     public static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder(10);
+    public static final String DELIMITER = "\u001F";
 
     private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom random = new SecureRandom();

@@ -2,7 +2,6 @@ package com.memoize.api.Repository;
 
 import com.memoize.api.Dto.ChatDto;
 import com.memoize.api.Entity.Chat;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,10 +17,4 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
         from Chat c where c.conversation.id = :id order by c.createdAt asc
     """)
     List<ChatDto> fetchChatsByConversationId(@Param("id") UUID id);
-
-    @Query("""
-        select new com.memoize.api.Dto.ChatDto(c.id, c.conversation.id, c.content, c.type, c.createdAt)
-        from Chat c where c.conversation.id = :id order by c.createdAt desc
-    """)
-    List<ChatDto> fetchRecentChatsByConversationId(@Param("id") UUID id, Pageable pageable);
 }
