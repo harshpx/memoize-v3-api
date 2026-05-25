@@ -15,6 +15,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,9 +50,11 @@ public class ChatServiceImpl implements ChatService {
         return chatClient.prompt(queryPrompt).stream().content()
                 .doOnNext(answerBuilder::append)
                 .doOnComplete(() -> {
-                    String fullAnswer = answerBuilder.toString();
-                    this.saveChat(fullAnswer, conversationId, ChatType.ANSWER);
-                    this.manageConversation(conversationId, query, fullAnswer);
+                    CompletableFuture.runAsync(() -> {
+                        String fullAnswer = answerBuilder.toString();
+                        this.saveChat(fullAnswer, conversationId, ChatType.ANSWER);
+                        this.manageConversation(conversationId, query, fullAnswer);
+                    });
                 });
     }
 
@@ -120,7 +123,7 @@ public class ChatServiceImpl implements ChatService {
         String rollingSummary = conversationRepository.findSummaryById(conversationId).orElse("");
         List<ChatDto> recentChats = chatRepository.fetchRecentChatsByConversationId(conversationId, PageRequest.of(0, 6)).reversed();
         String chatsFormatted = recentChats.stream()
-                .map(chat -> (chat.type() == ChatType.QUESTION ? "User: " : "Assistant: " + chat.content()))
+                .map(chat -> (chat.type() == ChatType.QUESTION ? "User: " : "Assistant: ") + chat.content())
                 .collect(Collectors.joining("\n"));
         return """
             You are a helpful AI assistant.
