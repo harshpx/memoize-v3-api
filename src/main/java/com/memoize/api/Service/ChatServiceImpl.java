@@ -11,9 +11,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -26,10 +28,12 @@ public class ChatServiceImpl implements ChatService {
     private final ChatClient chatClient;
 
     @Autowired
-    public ChatServiceImpl(ChatRepository chatRepository, ConversationRepository conversationRepository, ChatClient.Builder chatClientBuilder) {
+    public ChatServiceImpl(ChatRepository chatRepository,
+                           ConversationRepository conversationRepository,
+                           @Qualifier("gemini-3.1-flash-lite-chat-client") ChatClient chatClient) {
         this.chatRepository = chatRepository;
         this.conversationRepository = conversationRepository;
-        this.chatClient = chatClientBuilder.build();
+        this.chatClient = chatClient;
     }
 
     @Override
@@ -47,18 +51,33 @@ public class ChatServiceImpl implements ChatService {
         String queryPrompt = buildQueryWithContext(query, conversation);
         this.saveChat(query, conversation, ChatType.QUESTION);
         StringBuilder answerBuilder = new StringBuilder();
-        return chatClient.prompt(queryPrompt).stream().content()
+        return chatClient.prompt(queryPrompt)
+                .stream()
+                .content()
+                .timeout(Duration.ofSeconds(10))
                 .doOnNext(answerBuilder::append)
                 .doOnComplete(() -> CompletableFuture.runAsync(() -> {
                     String fullAnswer = answerBuilder.toString();
                     this.saveChat(fullAnswer, conversation, ChatType.ANSWER);
                     this.manageConversation(conversation, query, fullAnswer);
-                }));
+                }))
+                .onErrorResume(error -> {
+                    String fullAnswer = "Error generating response";
+                    CompletableFuture.runAsync(() -> {
+                        this.saveChat(fullAnswer, conversation, ChatType.ANSWER);
+                        this.onLlmErrorHandler(conversation, query, fullAnswer);
+                    });
+                    return Flux.just(fullAnswer);
+                });
     }
 
     // helpers
     private boolean isValidConversation(UUID conversationId, UUID userId) {
         return conversationRepository.existsByIdAndUserId(conversationId, userId);
+    }
+
+    private String safe(String input) {
+        return (input == null || input.isBlank()) ? "None" : input;
     }
 
     private void saveChat(String content, Conversation conversation, ChatType chatType) {
@@ -86,6 +105,20 @@ public class ChatServiceImpl implements ChatService {
             }
             conversation.setRecentChats(recentChats);
             conversation.setNew(false);
+            conversationRepository.saveAndFlush(conversation);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
+    private void onLlmErrorHandler(Conversation conversation, String currentQuery, String currentResponse) {
+        try {
+            String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
+            if (!conversation.isProperName()) {
+                conversation.setName("Error generation response");
+            }
+            conversation.setNew(false);
+            conversation.setRecentChats(recentChats);
             conversationRepository.saveAndFlush(conversation);
         } catch (Exception ex) {
             log.error(ex.getMessage());
@@ -128,10 +161,6 @@ public class ChatServiceImpl implements ChatService {
         """.formatted(firstQuery, firstResponse);
 
         return chatClient.prompt(context).call().content();
-    }
-
-    private String safe(String input) {
-        return (input == null || input.isBlank()) ? "None" : input;
     }
 
     private String buildQueryWithContext(String query, Conversation conversation) {

@@ -25,14 +25,12 @@ spring:
           client-id: ${GOOGLE_CLIENT_ID}
           client-secret: ${GOOGLE_CLIENT_SECRET}
   ai:
-    openai:
-      base-url: ${LLM_PROVIDER_BASE_URL}
-      api-key: ${LLM_API_KEY}
-      chat:
-        completions-path: /chat/completions
-        options:
-          model: ${LLM_MODEL}
-          temperature: 0.2
+    chat:
+      client:
+        enabled: false
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
 jwt:
   secret: ${JWT_SECRET?JWT_SECRET is required}
 mail.api:
