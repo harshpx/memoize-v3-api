@@ -2,7 +2,6 @@ package com.memoize.api.Service;
 
 import com.memoize.api.Config.Common;
 import com.memoize.api.Dto.ChatDto;
-import com.memoize.api.Entity.Chat;
 import com.memoize.api.Entity.Conversation;
 import com.memoize.api.Enum.ChatType;
 import com.memoize.api.Repository.ChatRepository;
@@ -14,10 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,15 +28,21 @@ import java.util.stream.Collectors;
 public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final ConversationRepository conversationRepository;
+    private final ChatPersistanceService chatPersistanceService;
     private final ChatClient chatClient;
+    private final Executor llmTaskExecutor;
 
     @Autowired
     public ChatServiceImpl(ChatRepository chatRepository,
                            ConversationRepository conversationRepository,
-                           @Qualifier("gemini-3.1-flash-lite-chat-client") ChatClient chatClient) {
+                           ChatPersistanceService chatPersistanceService,
+                           @Qualifier("gemini-3.1-flash-lite-chat-client") ChatClient chatClient,
+                           @Qualifier("llmTaskExecutor") Executor llmTaskExecutor) {
         this.chatRepository = chatRepository;
         this.conversationRepository = conversationRepository;
         this.chatClient = chatClient;
+        this.chatPersistanceService = chatPersistanceService;
+        this.llmTaskExecutor = llmTaskExecutor;
     }
 
     @Override
@@ -46,28 +55,59 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public Flux<String> queryLlmStream(String query, UUID conversationId, UUID userId) {
-        Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
-        String queryPrompt = buildQueryWithContext(query, conversation);
-        this.saveChat(query, conversation, ChatType.QUESTION);
-        StringBuilder answerBuilder = new StringBuilder();
-        return chatClient.prompt(queryPrompt)
-                .stream()
-                .content()
-                .timeout(Duration.ofSeconds(10))
-                .doOnNext(answerBuilder::append)
-                .doOnComplete(() -> CompletableFuture.runAsync(() -> {
-                    String fullAnswer = answerBuilder.toString();
-                    this.saveChat(fullAnswer, conversation, ChatType.ANSWER);
-                    this.manageConversation(conversation, query, fullAnswer);
-                }))
-                .onErrorResume(error -> {
-                    String fullAnswer = "Error generating response";
-                    CompletableFuture.runAsync(() -> {
-                        this.saveChat(fullAnswer, conversation, ChatType.ANSWER);
-                        this.onLlmErrorHandler(conversation, query, fullAnswer);
-                    });
-                    return Flux.just(fullAnswer);
+        long requestStartTime = System.currentTimeMillis();
+        log.info("[PROFILE] Request started for conversation: {}", conversationId);
+
+        return Mono.fromCallable(() -> {
+                    long dbStart = System.currentTimeMillis();
+                    Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
+                            .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
+                    chatPersistanceService.saveChat(query, conversation.getId(), ChatType.QUESTION);
+                    log.info("[PROFILE] STAGE 1: DB Fetch & Sync Save took {} ms", (System.currentTimeMillis() - dbStart));
+                    return conversation;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMapMany(conversation -> {
+                    String queryPrompt = buildQueryWithContext(query, conversation);
+                    StringBuilder answerBuilder = new StringBuilder();
+
+                    // Track Time-To-First-Token safely across Netty threads
+                    AtomicBoolean isFirstToken = new AtomicBoolean(true);
+                    long llmCallStartTime = System.currentTimeMillis();
+
+                    log.info("[PROFILE] STAGE 2: Prep done. Calling Gemini at {} ms from request start", (llmCallStartTime - requestStartTime));
+
+                    return chatClient.prompt(queryPrompt)
+                            .stream()
+                            .content()
+                            .timeout(Duration.ofSeconds(10))
+                            .doOnNext(token -> {
+                                if (isFirstToken.compareAndSet(true, false)) {
+                                    log.info("[PROFILE] STAGE 3: Time-To-First-Token (TTFT) took {} ms", (System.currentTimeMillis() - llmCallStartTime));
+                                }
+                                answerBuilder.append(token);
+                            })
+                            .doOnComplete(() -> {
+                                long streamEndTime = System.currentTimeMillis();
+                                log.info("[PROFILE] STAGE 4: Total LLM Stream took {} ms. Chunks received. Triggering background task.", (streamEndTime - llmCallStartTime));
+
+                                CompletableFuture.runAsync(() -> {
+                                    long bgStart = System.currentTimeMillis();
+                                    String fullAnswer = answerBuilder.toString();
+                                    chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
+                                    this.onLLMSuccessHandler(conversation, query, fullAnswer);
+                                    log.info("[PROFILE] STAGE 5: Background Housekeeping (Save + Context) took {} ms", (System.currentTimeMillis() - bgStart));
+                                }, llmTaskExecutor);
+                            })
+                            .onErrorResume(error -> {
+                                log.error("[PROFILE] ERROR during stream after {} ms: {}", (System.currentTimeMillis() - llmCallStartTime), error.getMessage());
+                                String fullAnswer = "Error generating response";
+                                CompletableFuture.runAsync(() -> {
+                                    chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
+                                    this.onLLMErrorHandler(conversation, query, fullAnswer);
+                                }, llmTaskExecutor);
+                                return Flux.just(fullAnswer);
+                            });
                 });
     }
 
@@ -80,46 +120,29 @@ public class ChatServiceImpl implements ChatService {
         return (input == null || input.isBlank()) ? "None" : input;
     }
 
-    private void saveChat(String content, Conversation conversation, ChatType chatType) {
+    private void onLLMSuccessHandler(Conversation conversation, String currentQuery, String currentResponse) {
         try {
-            Chat chat = Chat.builder().conversation(conversation).content(content).type(chatType).build();
-            chatRepository.saveAndFlush(chat);
+            String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
+            String name = conversation.getName();
+            boolean isProperName = conversation.isProperName();
+            if (!isProperName) {
+                name = generateNameForConversation(currentQuery, currentResponse);
+                isProperName = true;
+            }
+            String summary = generateUpdatedSummary(conversation.getSummary(), recentChats);
+            chatPersistanceService.saveConversation(conversation.getId(), summary, recentChats, name, isProperName);
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
     }
 
-    private void manageConversation(Conversation conversation, String currentQuery, String currentResponse) {
+    private void onLLMErrorHandler(Conversation conversation, String currentQuery, String currentResponse) {
         try {
-            String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
             String summary = conversation.getSummary();
-            CompletableFuture<String> updatedSummaryFuture = CompletableFuture.supplyAsync(() -> generateUpdatedSummary(summary, recentChats));
-            CompletableFuture<String> generatedNameFuture = null;
-            if (!conversation.isProperName()) {
-                generatedNameFuture = CompletableFuture.supplyAsync(() -> generateNameForConversation(currentQuery, currentResponse));
-            }
-            conversation.setSummary(updatedSummaryFuture.join());
-            if (generatedNameFuture != null) {
-                conversation.setName(generatedNameFuture.join());
-                conversation.setProperName(true);
-            }
-            conversation.setRecentChats(recentChats);
-            conversation.setNew(false);
-            conversationRepository.saveAndFlush(conversation);
-        } catch (Exception ex) {
-            log.error(ex.getMessage());
-        }
-    }
-
-    private void onLlmErrorHandler(Conversation conversation, String currentQuery, String currentResponse) {
-        try {
             String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
-            if (!conversation.isProperName()) {
-                conversation.setName("Error generation response");
-            }
-            conversation.setNew(false);
-            conversation.setRecentChats(recentChats);
-            conversationRepository.saveAndFlush(conversation);
+            boolean isProperName = conversation.isProperName();
+            String name = isProperName ? conversation.getName() : "Error in response generation";
+            chatPersistanceService.saveConversation(conversation.getId(), summary, recentChats, name, isProperName);
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }

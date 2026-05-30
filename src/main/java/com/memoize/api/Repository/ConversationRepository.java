@@ -31,5 +31,22 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     boolean newConversationExistsForUser(@Param("userId") UUID userId);
 
     @Modifying
+    @Query("""
+        update Conversation c
+        set c.summary = :summary,
+            c.recentChats = :recentChats,
+            c.name = :name,
+            c.isProperName = :isProperName,
+            c.isNew = false,
+            c.updatedAt = current_timestamp
+        where c.id = :id
+    """)
+    void updateConversation(@Param("id") UUID id,
+                            @Param("summary") String summary,
+                            @Param("recentChats") String recentChats,
+                            @Param("name") String name,
+                            @Param("isProperName") boolean isProperName);
+
+    @Modifying
     int deleteByIdAndUserId(UUID id, UUID userId);
 }
