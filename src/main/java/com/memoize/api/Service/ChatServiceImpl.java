@@ -55,60 +55,31 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public Flux<String> queryLlmStream(String query, UUID conversationId, UUID userId) {
-        long requestStartTime = System.currentTimeMillis();
-        log.info("[PROFILE] Request started for conversation: {}", conversationId);
-
-        return Mono.fromCallable(() -> {
-                    long dbStart = System.currentTimeMillis();
-                    Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
-                            .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
-                    chatPersistanceService.saveChat(query, conversation.getId(), ChatType.QUESTION);
-                    log.info("[PROFILE] STAGE 1: DB Fetch & Sync Save took {} ms", (System.currentTimeMillis() - dbStart));
-                    return conversation;
+        Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
+        chatPersistanceService.saveChat(query, conversation.getId(), ChatType.QUESTION);
+        String queryPrompt = buildQueryWithContext(query, conversation);
+        StringBuffer answerBuffer = new StringBuffer();
+        return chatClient.prompt(queryPrompt)
+                .stream()
+                .content()
+                .doOnNext(answerBuffer::append)
+                .doOnComplete(() -> {
+                    CompletableFuture.runAsync(() -> {
+                        String fullAnswer = answerBuffer.toString();
+                        chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
+                        this.onLLMSuccessHandler(conversation, query, fullAnswer);
+                    }, llmTaskExecutor);
                 })
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMapMany(conversation -> {
-                    String queryPrompt = buildQueryWithContext(query, conversation);
-                    StringBuilder answerBuilder = new StringBuilder();
-
-                    // Track Time-To-First-Token safely across Netty threads
-                    AtomicBoolean isFirstToken = new AtomicBoolean(true);
-                    long llmCallStartTime = System.currentTimeMillis();
-
-                    log.info("[PROFILE] STAGE 2: Prep done. Calling Gemini at {} ms from request start", (llmCallStartTime - requestStartTime));
-
-                    return chatClient.prompt(queryPrompt)
-                            .stream()
-                            .content()
-                            .timeout(Duration.ofSeconds(10))
-                            .doOnNext(token -> {
-                                if (isFirstToken.compareAndSet(true, false)) {
-                                    log.info("[PROFILE] STAGE 3: Time-To-First-Token (TTFT) took {} ms", (System.currentTimeMillis() - llmCallStartTime));
-                                }
-                                answerBuilder.append(token);
-                            })
-                            .doOnComplete(() -> {
-                                long streamEndTime = System.currentTimeMillis();
-                                log.info("[PROFILE] STAGE 4: Total LLM Stream took {} ms. Chunks received. Triggering background task.", (streamEndTime - llmCallStartTime));
-
-                                CompletableFuture.runAsync(() -> {
-                                    long bgStart = System.currentTimeMillis();
-                                    String fullAnswer = answerBuilder.toString();
-                                    chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
-                                    this.onLLMSuccessHandler(conversation, query, fullAnswer);
-                                    log.info("[PROFILE] STAGE 5: Background Housekeeping (Save + Context) took {} ms", (System.currentTimeMillis() - bgStart));
-                                }, llmTaskExecutor);
-                            })
-                            .onErrorResume(error -> {
-                                log.error("[PROFILE] ERROR during stream after {} ms: {}", (System.currentTimeMillis() - llmCallStartTime), error.getMessage());
-                                String fullAnswer = "Error generating response";
-                                CompletableFuture.runAsync(() -> {
-                                    chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
-                                    this.onLLMErrorHandler(conversation, query, fullAnswer);
-                                }, llmTaskExecutor);
-                                return Flux.just(fullAnswer);
-                            });
+                .onErrorResume(error -> {
+                    String fullAnswer = "Error generating response";
+                    CompletableFuture.runAsync(() -> {
+                        chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
+                        this.onLLMErrorHandler(conversation, query, fullAnswer);
+                    }, llmTaskExecutor);
+                    return Flux.just(fullAnswer);
                 });
+
     }
 
     // helpers
