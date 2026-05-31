@@ -55,14 +55,20 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public Flux<String> queryLlmStream(String query, UUID conversationId, UUID userId) {
-        Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
-        chatPersistanceService.saveChat(query, conversation.getId(), ChatType.QUESTION);
-        String queryPrompt = buildQueryWithContext(query, conversation);
-        StringBuffer answerBuffer = new StringBuffer();
-        return chatClient.prompt(queryPrompt)
+        return Mono.fromCallable(() -> {
+            Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
+                    .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
+            chatPersistanceService.saveChat(query, conversation.getId(), ChatType.QUESTION);
+            return conversation;
+        })
+        .subscribeOn(Schedulers.boundedElastic())
+        .flatMapMany(conversation -> {
+            String queryPrompt = buildQueryWithContext(query, conversation);
+            StringBuffer answerBuffer = new StringBuffer();
+            return chatClient.prompt(queryPrompt)
                 .stream()
                 .content()
+                .timeout(Duration.ofSeconds(10))
                 .doOnNext(answerBuffer::append)
                 .doOnComplete(() -> {
                     CompletableFuture.runAsync(() -> {
@@ -79,7 +85,7 @@ public class ChatServiceImpl implements ChatService {
                     }, llmTaskExecutor);
                     return Flux.just(fullAnswer);
                 });
-
+        });
     }
 
     // helpers
