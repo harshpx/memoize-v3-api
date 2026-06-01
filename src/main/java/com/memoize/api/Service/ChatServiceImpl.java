@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -64,7 +63,7 @@ public class ChatServiceImpl implements ChatService {
         .subscribeOn(Schedulers.boundedElastic())
         .flatMapMany(conversation -> {
             String queryPrompt = buildQueryWithContext(query, conversation);
-            StringBuffer answerBuffer = new StringBuffer();
+            StringBuilder answerBuffer = new StringBuilder();
             return chatClient.prompt(queryPrompt)
                 .stream()
                 .content()
