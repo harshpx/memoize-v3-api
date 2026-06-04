@@ -23,5 +23,10 @@ public interface AuthController {
 
     ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(EmailRequest emailRequest);
 
+    ResponseEntity<CommonResponse<Boolean>> sendPasswordResetCodeEmail(EmailRequest emailRequest);
+
+    ResponseEntity<CommonResponse<Boolean>> verifyPasswordResetCode(VerificationCodeCheckRequest verificationCodeCheckRequest);
+
+    ResponseEntity<CommonResponse<Boolean>> resetUserPassword(PasswordResetRequest passwordResetRequest);
 
 }

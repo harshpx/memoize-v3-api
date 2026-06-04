@@ -1,7 +1,9 @@
 package com.memoize.api.Service;
 
+import com.memoize.api.Enum.VerificationType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -25,16 +27,38 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    public void sendVerificationEmail(String email, String verificationCode) {
+    public void sendVerificationCodeEmail(String email, String verificationCode, VerificationType verificationType) {
         if (email == null || email.isBlank() || verificationCode == null || verificationCode.isBlank()) {
             throw new RuntimeException("Recipient email address and verification code is required.");
+        }
+        
+        String subject = "";
+        if (verificationType == VerificationType.VERIFY_EMAIL) {
+            subject = "Memoize Email Verification";
+        }  else if (verificationType == VerificationType.RESET_PASSWORD) {
+            subject = "Memoize Forgot Password Code";
+        }
+
+        String text = "";
+        if (verificationType == VerificationType.VERIFY_EMAIL) {
+            text = """
+                    Your email verification code is: %s
+                    This code will only be active for 10 minutes.
+                    (You will only be able to generate new code once this expires)
+                   """.formatted(verificationCode);
+        } else if (verificationType == VerificationType.RESET_PASSWORD) {
+            text = """
+                    Your Password Reset verification code is: %s
+                    This code will only be active for 10 minutes.
+                    (You will only be able to generate new code once this expires)
+                   """.formatted(verificationCode);
         }
 
         var body = Map.of(
                 "from", Map.of("email", "support@memoize.in", "name", "Memoize Team"),
                 "to", List.of(Map.of("email", email)),
-                "subject", "Memoize email verification",
-                "text", "Your email verification code is: " + verificationCode + "\n\nThis code will only be active for 10 minutes (you will only be able to generate a new code once this expires)"
+                "subject", subject,
+                "text", text
         );
 
         String response = restClient.post()

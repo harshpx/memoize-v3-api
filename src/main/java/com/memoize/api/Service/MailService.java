@@ -1,5 +1,7 @@
 package com.memoize.api.Service;
 
+import com.memoize.api.Enum.VerificationType;
+
 public interface MailService {
-    void sendVerificationEmail(String email, String verificationCode);
+    void sendVerificationCodeEmail(String email, String verificationCode, VerificationType verificationType);
 }

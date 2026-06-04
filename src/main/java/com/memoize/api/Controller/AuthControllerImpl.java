@@ -1,6 +1,7 @@
 package com.memoize.api.Controller;
 
 import com.memoize.api.Dto.*;
+import com.memoize.api.Enum.VerificationType;
 import com.memoize.api.Service.AuthService;
 import com.memoize.api.Service.RefreshTokenService;
 import jakarta.servlet.http.Cookie;
@@ -36,7 +37,28 @@ public class AuthControllerImpl implements AuthController {
     @Override
     @PostMapping("/verify-email")
     public ResponseEntity<CommonResponse<Boolean>> sendNewVerificationEmail(@RequestBody @Valid EmailRequest emailRequest) {
-        authService.sendVerificationEmail(emailRequest.email(), true);
+        authService.sendVerificationEmail(emailRequest.email(), VerificationType.VERIFY_EMAIL);
+        return ResponseEntity.ok(CommonResponse.success(true));
+    }
+
+    @Override
+    @PostMapping("/reset-password-send")
+    public ResponseEntity<CommonResponse<Boolean>> sendPasswordResetCodeEmail(@RequestBody @Valid EmailRequest emailRequest) {
+        authService.sendVerificationEmail(emailRequest.email(), VerificationType.RESET_PASSWORD);
+        return ResponseEntity.ok(CommonResponse.success(true));
+    }
+
+    @Override
+    @PostMapping("/reset-password-check")
+    public ResponseEntity<CommonResponse<Boolean>> verifyPasswordResetCode(@RequestBody @Valid VerificationCodeCheckRequest verificationCodeCheckRequest) {
+        authService.verifyPasswordResetCode(verificationCodeCheckRequest);
+        return ResponseEntity.ok(CommonResponse.success(true));
+    }
+
+    @Override
+    @PostMapping("/reset-password")
+    public ResponseEntity<CommonResponse<Boolean>> resetUserPassword(@RequestBody @Valid PasswordResetRequest passwordResetRequest) {
+        authService.resetPassword(passwordResetRequest);
         return ResponseEntity.ok(CommonResponse.success(true));
     }
 

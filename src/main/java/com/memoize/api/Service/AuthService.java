@@ -2,7 +2,10 @@ package com.memoize.api.Service;
 
 import com.memoize.api.Dto.AuthenticationResponse;
 import com.memoize.api.Dto.LoginRequest;
+import com.memoize.api.Dto.PasswordResetRequest;
+import com.memoize.api.Dto.VerificationCodeCheckRequest;
 import com.memoize.api.Dto.SignupRequest;
+import com.memoize.api.Enum.VerificationType;
 
 public interface AuthService {
     AuthenticationResponse login(LoginRequest request);
@@ -13,5 +16,9 @@ public interface AuthService {
 
     Boolean isEmailAvailable(String email);
 
-    void sendVerificationEmail(String email, boolean newRegistration);
+    void verifyPasswordResetCode(VerificationCodeCheckRequest request);
+
+    void resetPassword(PasswordResetRequest request);
+
+    void sendVerificationEmail(String email, VerificationType verificationType);
 }
