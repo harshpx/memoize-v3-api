@@ -36,9 +36,9 @@ public class ChatPersistanceService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveConversation(UUID conversationId, String summary, String recentChats, String name, boolean isProperName) {
+    public void setConversationName(UUID conversationId, String name) {
         try {
-            conversationRepository.updateConversation(conversationId, summary, recentChats, name, isProperName);
+            conversationRepository.updateConversationName(conversationId, name);
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }

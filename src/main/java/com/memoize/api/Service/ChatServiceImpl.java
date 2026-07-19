@@ -1,6 +1,5 @@
 package com.memoize.api.Service;
 
-import com.memoize.api.Config.Common;
 import com.memoize.api.Dto.ChatDto;
 import com.memoize.api.Entity.Conversation;
 import com.memoize.api.Enum.ChatType;
@@ -20,7 +19,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,18 +26,21 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final ConversationRepository conversationRepository;
     private final ChatPersistanceService chatPersistanceService;
-    private final ChatClient chatClient;
+    private final ChatClient vectorStoreChatClient;
+    private final ChatClient simpleChatClient;
     private final Executor llmTaskExecutor;
 
     @Autowired
     public ChatServiceImpl(ChatRepository chatRepository,
                            ConversationRepository conversationRepository,
                            ChatPersistanceService chatPersistanceService,
-                           @Qualifier("gemini-3.1-flash-lite-chat-client") ChatClient chatClient,
+                           @Qualifier("simple-gemini-3.1-flash-lite") ChatClient simpleChatClient,
+                           @Qualifier("vector-store-gemini-3.1-flash-lite") ChatClient vectorStoreChatClient,
                            @Qualifier("llmTaskExecutor") Executor llmTaskExecutor) {
         this.chatRepository = chatRepository;
         this.conversationRepository = conversationRepository;
-        this.chatClient = chatClient;
+        this.simpleChatClient = simpleChatClient;
+        this.vectorStoreChatClient = vectorStoreChatClient;
         this.chatPersistanceService = chatPersistanceService;
         this.llmTaskExecutor = llmTaskExecutor;
     }
@@ -62,25 +63,23 @@ public class ChatServiceImpl implements ChatService {
         })
         .subscribeOn(Schedulers.boundedElastic())
         .flatMapMany(conversation -> {
-            String queryPrompt = buildQueryWithContext(query, conversation);
-            StringBuilder answerBuffer = new StringBuilder();
-            return chatClient.prompt(queryPrompt)
+            StringBuilder answerChunks = new StringBuilder();
+            return vectorStoreChatClient.prompt().user(query)
+                .advisors(advisor -> advisor
+                        .param("chat_memory_conversation_id", conversationId)
+                        .param("chat_memory_response_size", 5))
                 .stream()
                 .content()
-                .timeout(Duration.ofSeconds(10))
-                .doOnNext(answerBuffer::append)
-                .doOnComplete(() -> {
-                    CompletableFuture.runAsync(() -> {
-                        String fullAnswer = answerBuffer.toString();
-                        chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
-                        this.onLLMSuccessHandler(conversation, query, fullAnswer);
-                    }, llmTaskExecutor);
-                })
-                .onErrorResume(error -> {
+                .timeout(Duration.ofSeconds(30))
+                .doOnNext(answerChunks::append)
+                .doOnComplete(() -> CompletableFuture.runAsync(() -> {
+                    String fullResponse = answerChunks.toString();
+                    this.onLLMSuccessHandler(conversation, query, fullResponse);
+                }, llmTaskExecutor))
+                .onErrorResume((error) -> {
                     String fullAnswer = "Error generating response";
                     CompletableFuture.runAsync(() -> {
                         chatPersistanceService.saveChat(fullAnswer, conversation.getId(), ChatType.ANSWER);
-                        this.onLLMErrorHandler(conversation, query, fullAnswer);
                     }, llmTaskExecutor);
                     return Flux.just(fullAnswer);
                 });
@@ -98,46 +97,16 @@ public class ChatServiceImpl implements ChatService {
 
     private void onLLMSuccessHandler(Conversation conversation, String currentQuery, String currentResponse) {
         try {
-            String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
+            chatPersistanceService.saveChat(currentResponse, conversation.getId(), ChatType.ANSWER);
             String name = conversation.getName();
             boolean isProperName = conversation.isProperName();
             if (!isProperName) {
                 name = generateNameForConversation(currentQuery, currentResponse);
-                isProperName = true;
             }
-            String summary = generateUpdatedSummary(conversation.getSummary(), recentChats);
-            chatPersistanceService.saveConversation(conversation.getId(), summary, recentChats, name, isProperName);
+            chatPersistanceService.setConversationName(conversation.getId(), name);
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
-    }
-
-    private void onLLMErrorHandler(Conversation conversation, String currentQuery, String currentResponse) {
-        try {
-            String summary = conversation.getSummary();
-            String recentChats = updateRecentChats(conversation, currentQuery, currentResponse);
-            boolean isProperName = conversation.isProperName();
-            String name = isProperName ? conversation.getName() : "Error in response generation";
-            chatPersistanceService.saveConversation(conversation.getId(), summary, recentChats, name, isProperName);
-        } catch (Exception ex) {
-            log.error(ex.getMessage());
-        }
-    }
-
-    private String updateRecentChats(Conversation conversation, String currentQuery, String currentResponse) {
-        String recentChatString = conversation.getRecentChats() != null ? conversation.getRecentChats() : "";
-        Queue<String> recentChatsQueue = Arrays.stream(recentChatString.split(Common.DELIMITER))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toCollection(ArrayDeque::new));
-        int size = recentChatsQueue.size();
-        if (size >= 6) {
-            for (int i = 0; i < 2; i++) {
-                recentChatsQueue.poll();
-            }
-        }
-        recentChatsQueue.offer("User: " + currentQuery);
-        recentChatsQueue.offer("Assistant: " + currentResponse);
-        return String.join(Common.DELIMITER, recentChatsQueue);
     }
 
     private String generateNameForConversation(String firstQuery, String firstResponse) {
@@ -159,60 +128,6 @@ public class ChatServiceImpl implements ChatService {
             Response: %s
         """.formatted(firstQuery, firstResponse);
 
-        return chatClient.prompt(context).call().content();
-    }
-
-    private String buildQueryWithContext(String query, Conversation conversation) {
-        String rollingSummary = conversation.getSummary();
-        String recentChats = conversation.getRecentChats() != null ? conversation.getRecentChats() : "";
-        String chatsFormatted = Arrays.stream(recentChats.split(Common.DELIMITER))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining("\n"));
-
-        return """
-            Conversation summary (long-term context):
-            %s
-
-            Recent conversations (last interactions):
-            %s
-
-            Instructions:
-            - Use both the summary and recent conversation to understand context
-            - Give a clear, accurate, and helpful answer
-            - Be concise but complete
-            - Do NOT repeat previous answers unless necessary
-            - If context is insufficient, rely on the current question
-
-            Current User Question:
-            %s
-
-            Answer:
-        """.formatted(safe(rollingSummary), safe(chatsFormatted), safe(query));
-    }
-
-    private String generateUpdatedSummary(String previousSummary, String recentChats) {
-        String[] temp = recentChats.split(Common.DELIMITER);
-        recentChats = String.join("\n", temp);
-        String prompt = """
-            You are maintaining a conversation summary using:
-
-            Previous Summary:
-            %s
-
-            Recent Conversations:
-            %s
-  
-            Instructions:
-            - Update the summary by incorporating new important information
-            - Keep it concise and structured
-            - Preserve key facts, decisions, preferences, and topics
-            - Remove redundant or less important details
-            - Keep the summary under 150 words
-            - Do NOT repeat the entire conversation
-            - Output ONLY the updated summary
-
-            Updated Summary:
-        """.formatted(safe(previousSummary), safe(recentChats));
-        return chatClient.prompt(prompt).call().content();
+        return simpleChatClient.prompt(context).call().content();
     }
 }

@@ -16,8 +16,8 @@ import java.util.UUID;
 public interface ConversationRepository extends JpaRepository<Conversation, UUID> {
     @Query("""
         select new com.memoize.api.Dto.ConversationDto(
-            c.id, c.user.id, c.name, c.summary, c.recentChats,
-            c.isProperName, c.isNew, c.createdAt, c.updatedAt
+            c.id, c.user.id, c.name, c.isProperName,
+            c.isNew, c.createdAt, c.updatedAt
         )
         from Conversation c where c.user.id = :userId order by c.isNew desc, c.updatedAt desc
     """)
@@ -33,19 +33,14 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     @Modifying
     @Query("""
         update Conversation c
-        set c.summary = :summary,
-            c.recentChats = :recentChats,
-            c.name = :name,
-            c.isProperName = :isProperName,
+        set c.name = :name,
+            c.isProperName = true,
             c.isNew = false,
             c.updatedAt = current_timestamp
         where c.id = :id
     """)
-    void updateConversation(@Param("id") UUID id,
-                            @Param("summary") String summary,
-                            @Param("recentChats") String recentChats,
-                            @Param("name") String name,
-                            @Param("isProperName") boolean isProperName);
+    void updateConversationName(@Param("id") UUID id,
+                            @Param("name") String name);
 
     @Modifying
     int deleteByIdAndUserId(UUID id, UUID userId);
