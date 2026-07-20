@@ -9,8 +9,10 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,11 +20,23 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
+    private final VectorStore chatMemoryVectorStore;
+
+    public ConversationServiceImpl(
+        ConversationRepository conversationRepository,
+        UserRepository userRepository,
+        EntityManager entityManager,
+        @Qualifier("chat-memory-vector-store") VectorStore chatMemoryVectorStore
+    ) {
+        this.conversationRepository = conversationRepository;
+        this.userRepository = userRepository;
+        this.entityManager = entityManager;
+        this.chatMemoryVectorStore = chatMemoryVectorStore;
+    }
 
     @Override
     @Transactional
@@ -62,6 +76,8 @@ public class ConversationServiceImpl implements ConversationService {
         if (!conversationRepository.existsByIdAndUserId(conversationId, userId)) {
             throw new EntityNotFoundException("Conversation doesn't exist");
         }
+        var conversationFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("conversationId"), new Filter.Value(conversationId));
+        chatMemoryVectorStore.delete(conversationFilter);
         return conversationRepository.deleteByIdAndUserId(conversationId, userId);
     }
 }
