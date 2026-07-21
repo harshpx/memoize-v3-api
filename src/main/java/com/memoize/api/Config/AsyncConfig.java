@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class AsyncConfig {
     @Bean("llmTaskExecutor")
-    public Executor llmTaskExecutor() {
+    public ThreadPoolTaskExecutor llmTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(16);
