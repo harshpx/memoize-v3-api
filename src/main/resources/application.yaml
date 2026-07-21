@@ -31,7 +31,7 @@ spring:
         embedding:
           api-key: ${GEMINI_API_KEY}
           text:
-            model: gemini-embedding-2
+            model: gemini-embedding-001
             dimensions: 768
 
 jwt:
