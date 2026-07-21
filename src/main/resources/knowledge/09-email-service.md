@@ -141,3 +141,60 @@ public static String generateRandomString(int length) {
     }
     return sb.toString();
 }
+```
+
+---
+
+## 7. Frontend Integration
+
+### Email Trigger Flows
+
+The email service is triggered by two user-facing flows on the frontend:
+
+**1. Signup OTP Flow:**
+```
+[Auth Page - Signup Tab]
+    │
+    ├── User fills: Name, Username, Email, Password, Confirm Password
+    ├── User clicks "Send OTP" button
+    │   └── POST /auth/verify-email → Backend sends verification email
+    ├── User receives 6-digit code at their email inbox
+    ├── User enters code in the OTP input field
+    └── User clicks "Signup" to complete registration
+```
+
+- The "Send OTP" button is disabled while the request is in progress
+- A success message indicates the code was sent
+- If the email is already registered, an inline error is shown and the OTP is not sent
+- Rate limiting: If a valid token already exists (within 10 min window), the backend silently skips sending a new one
+
+**2. Password Reset Flow:**
+```
+[Auth Page - "Forgot password?" link]
+    │
+    ├── Step 1: User enters email → POST /auth/reset-password-send
+    │   └── Verification code sent to email
+    │
+    ├── Step 2: User enters code → POST /auth/reset-password-check
+    │   └── Code verified (token preserved for next step)
+    │
+    └── Step 3: User enters new password → POST /auth/reset-password
+        └── Password updated
+```
+
+- The password reset flow is a multi-step process with dedicated UI pages/steps
+- Each step validates before proceeding to the next
+- If the email does not exist in the system, the user is notified
+
+### UI States
+
+| State | Frontend Behavior |
+|-------|-------------------|
+| **Sending OTP** | Button shows loading state, disabled |
+| **OTP Sent** | Success message, OTP input field enabled |
+| **OTP Error (Network)** | Toast notification: "Failed to send verification email" |
+| **OTP Rate Limited** | Silently handled (backend skips if valid token exists); no duplicate sent |
+| **Password Reset - Step 1** | Email input form |
+| **Password Reset - Step 2** | OTP input form |
+| **Password Reset - Step 3** | New password + confirm password form |
+| **Password Reset Success** | Redirect to Login page with success message |

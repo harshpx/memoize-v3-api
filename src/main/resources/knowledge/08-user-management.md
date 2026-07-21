@@ -178,3 +178,50 @@ Note: Role-based authorization is set up in the JWT and SecurityContext, but gra
 **Indexes:**
 - `idx_user_username` on `username`
 - `idx_user_email` on `email`
+
+---
+
+## 9. Frontend Integration
+
+### User Profile Display
+
+The user's profile information is displayed in the **sidebar** (desktop) or **bottom dock** (mobile) via a user avatar/icon:
+
+**Desktop Sidebar:**
+```
+┌─────────────────────┐
+│  [User Avatar]      │
+│  John Doe           │
+│  @johndoe           │
+│                     │
+│  [Logout Button]    │
+└─────────────────────┘
+```
+
+- Clicking the user avatar opens a popover with user details and a **Logout** option
+- The avatar URL comes from the `avatarUrl` field (default: placeholder image)
+- For OAuth2/Google users, the avatar is the Google profile picture
+
+### Dashboard Greeting
+
+The Dashboard displays a **time-based greeting** using the user's name:
+- Morning (before 12 PM): *"Good morning, [Name]"*
+- Afternoon (12–6 PM): *"Good afternoon, [Name]"*
+- Evening (after 6 PM): *"Good evening, [Name]"*
+
+### Session & Auth State
+
+| State | Frontend Behavior |
+|-------|-------------------|
+| **Authenticated** | User profile loaded, sidebar shows avatar + name |
+| **Unauthenticated** | Redirected to Auth page |
+| **Session Restore** | Brief loading screen while `/auth/refresh` restores session |
+| **Logout** | Calls `/auth/logout`, clears cookie, redirects to Auth page |
+
+### User Data Flow (Frontend)
+
+1. On app load, the frontend calls `GET /user/me` with the JWT token
+2. The response populates the user's name, avatar, and role in the UI
+3. The user's name is used for the Dashboard greeting and MemoAI welcome screen
+4. The avatar is displayed in the sidebar/dock user profile section
+5. On logout, the frontend calls `/auth/logout` and clears local state

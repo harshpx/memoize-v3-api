@@ -245,3 +245,83 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
 | updated_at   | timestamp | NOT NULL                       |
 
 **Foreign Key:** `fk_notes_user → users(id)`
+
+---
+
+## 9. Frontend Integration
+
+### Notes Page UI
+
+The frontend displays notes in a **masonry grid layout** on the Notes page. Each note card shows a preview of the content and the last updated date.
+
+**Desktop Layout:**
+```
+┌──────────────────────────────────────────────────────┐
+│ [Sidebar]  │  Notes Grid (Masonry Layout)            │
+│            │                                          │
+│            │  ┌──────┐ ┌──────┐ ┌──────┐             │
+│            │  │ Note │ │ Note │ │ Note │             │
+│            │  │  A   │ │  B   │ │  C   │             │
+│            │  └──────┘ └──────┘ └──────┘             │
+│            │  ┌──────┐ ┌──────┐ ┌──────┐             │
+│            │  │ Note │ │ Note │ │ Note │             │
+│            │  │  D   │ │  E   │ │  F   │             │
+│            │  └──────┘ └──────┘ └──────┘             │
+└──────────────────────────────────────────────────────┘
+```
+
+**Creating a Note** — Three entry points:
+1. **Dashboard**: Click "Add Note" button in Quick Actions
+2. **Sidebar/Dock**: Click "Add Note" button in the sidebar (desktop) or navigate to Notes and use the action
+3. **Notes Page**: Click the "+" (plus icon) card at the top of the notes grid
+
+### Note Editor (TipTap Rich Text)
+
+The Note Editor uses **TipTap** (ProseMirror-based) with a toolbar providing:
+
+| Tool Group | Options |
+|---|---|
+| **Undo/Redo** | Undo, Redo |
+| **Heading** | Heading 1, 2, 3, 4 |
+| **Lists** | Bullet List, Ordered List, Task List |
+| **Blocks** | Blockquote, Code Block |
+| **Text Formatting** | Bold, Italic, Underline, Strike |
+| **Script** | Superscript, Subscript |
+| **Text Alignment** | Left, Center, Right, Justify |
+
+**Keyboard shortcuts** work natively (Ctrl+B for bold, Ctrl+I for italic, etc.).
+
+### Save System (Three-Tier)
+
+| Save Trigger | Description |
+|---|---|
+| **Auto-Save (Every 15s)** | Automatically saves changes every 15 seconds while typing |
+| **Manual Save** | Click the **Save** button in the bottom bar to save immediately |
+| **Save on Unmount** | Attempts to save before navigating away |
+
+**Save Status Indicators (bottom bar):**
+- *"Type something to save"* — Brand new empty note
+- *"Save"* — Unsaved changes exist
+- *"Saving..."* — Save operation in progress
+- *"Saved"* — All changes persisted
+
+### Trash Management
+
+**Trash Page** displays all soft-deleted notes in a masonry grid:
+- Click a note → opens in editor with **Restore** button (restore icon) in the bottom bar
+- Click **Delete** again (red) → permanently erases the note
+- Empty state: Trash can icon with "Trash empty" message
+
+### UI States
+
+| State | Frontend Behavior |
+|-------|-------------------|
+| **Loading** | Skeleton placeholders while notes are being fetched |
+| **Empty (No Notes)** | Encouraging CTA to create the first note |
+| **Populated** | Masonry grid of note cards with previews |
+| **Saving** | "Saving..." indicator in the bottom bar |
+| **Saved** | "Saved" indicator in the bottom bar |
+| **Error (Create/Update)** | Toast notification: "Failed to create note" / "Failed to update note" |
+| **Deleted (Soft)** | Success toast + note moves to Trash |
+| **Restored** | Success toast + note moves back to active notes |
+| **Permanently Deleted** | Success toast + note is gone forever |

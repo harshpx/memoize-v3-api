@@ -79,17 +79,59 @@ Refresh tokens are issued as **HTTP-only cookies** for secure token rotation.
               └── Sends email via Mailtrap API with verification code
 ```
 
+The `sendVerificationEmail()` method accepts a `VerificationType` parameter to distinguish between:
+- `VERIFY_EMAIL` — Used during signup; validates the email is not already in use
+- `RESET_PASSWORD` — Used during password reset; validates the email exists in the system
+
 ### Password Reset Flow
+
+The password reset is a **3-step process**:
 
 ```
 Step 1: POST /auth/reset-password-send
-        └── Sends verification code to email (must exist in system)
+        Body: { "email": "john@example.com" }
+        └── Calls sendVerificationEmail(email, RESET_PASSWORD)
+            ├── Validates email exists in system
+            ├── Checks for existing valid token (rate limit)
+            ├── Generates 6-char random code
+            ├── Saves to verification_tokens table (10 min expiry)
+            └── Sends email with verification code
 
 Step 2: POST /auth/reset-password-check
-        └── Verifies the code (preserves token for next step)
+        Body: { "email": "john@example.com", "verificationCode": "ABC123" }
+        └── Calls verifyPasswordResetCode()
+            ├── Validates the code (preserves token for next step)
+            └── Returns success/failure
 
 Step 3: POST /auth/reset-password
-        └── Validates code again + updates password with BCrypt
+        Body: { "email": "john@example.com", "verificationCode": "ABC123", "newPassword": "newSecurePass" }
+        └── Calls resetPassword()
+            ├── Validates code again
+            ├── Encodes new password with BCrypt
+            └── Updates user password in database
+```
+
+**Key difference between Step 2 and Step 3:**
+- Step 2 (`verifyPasswordResetCode`) uses `toCheckAgain=true` — the verification token is **preserved** so it can be reused in Step 3
+- Step 3 (`resetPassword`) uses `toCheckAgain=false` — the verification token is **deleted** after successful validation
+
+### Verification Code Helper
+
+```java
+@Transactional
+protected boolean verifyCode(String email, String code, boolean toCheckAgain) {
+    String encodedCode = Common.encodeBase64(code);
+    var token = verificationTokenRepository.findByEmailAndToken(email, encodedCode);
+    if (token.isEmpty()) return false;
+    if (token.get().getExpiresAt().isBefore(LocalDateTime.now())) {
+        verificationTokenRepository.delete(token.get());
+        return false;
+    }
+    if (!toCheckAgain) {
+        verificationTokenRepository.delete(token.get());
+    }
+    return true;
+}
 ```
 
 ### Username/Email Availability
@@ -249,7 +291,11 @@ Allow Credentials: true
 |------------------|-----------------------------|-------------------------------------------|
 | `Role`           | ADMIN, MOD, USER            | User role for authorization                |
 | `AuthSource`     | EMAIL, GOOGLE, GITHUB, MICROSOFT | Where the user account originated     |
-| `VerificationType` | VERIFY_EMAIL, RESET_PASSWORD | Purpose of the email verification code |
+| `VerificationType` | VERIFY_EMAIL(0), RESET_PASSWORD(1) | Purpose of the email verification code |
+
+The `VerificationType` enum is used in `AuthServiceImpl.sendVerificationEmail()` to:
+- `VERIFY_EMAIL`: Validate email is not already in use (for signup)
+- `RESET_PASSWORD`: Validate email exists in the system (for password reset)
 
 ---
 
@@ -273,3 +319,58 @@ Error response format:
   "status": 401,
   "timestamp": "2026-07-21T12:00:00"
 }
+```
+
+---
+
+## 8. Frontend Integration
+
+### Auth Page UI
+
+The frontend provides a unified **Auth Page** with two tabs: **Login** and **Signup**.
+
+**Signup Tab:**
+- Fields: Name, Username, Email, Password, Confirm Password
+- Real-time availability checks: Username and email are checked against `/auth/check-username` and `/auth/check-email` endpoints with a 1-second debounce after the user stops typing
+- If username/email is taken, a red error message is displayed and the form cannot be submitted
+- "Send OTP" button triggers `/auth/verify-email` to send a 6-digit verification code
+- OTP input field for entering the code
+- "Signup" button submits to `/auth/signup` with all fields + verification code
+- On success: auto-login, welcome toast, redirect to Dashboard
+
+**Login Tab:**
+- Fields: Username or Email, Password
+- "Forgot password?" link navigates to password reset flow
+- "Login" button submits to `/auth/login`
+- On success: welcome toast, redirect to Dashboard
+
+**Password Reset Flow (Frontend):**
+1. User clicks "Forgot password?" → enters email → calls `/auth/reset-password-send`
+2. User receives email with verification code → enters code → calls `/auth/reset-password-check`
+3. User enters new password + confirm password → calls `/auth/reset-password`
+4. On success: redirect to Login page with success message
+
+**OAuth2 / Google Sign-In:**
+- "Continue with Google" button at the bottom of the form card
+- On web: redirects to Google's OAuth consent screen, then back to `{clientUrl}/oauth2redirect`
+- On native mobile (iOS/Android via Capacitor): OAuth2 is handled natively
+- After OAuth2 success: auto-login, redirect to Dashboard
+
+### Session Management (Frontend)
+
+- **JWT Access Token**: Stored in-memory (not localStorage) for security. Sent as `Authorization: Bearer <token>` header.
+- **Refresh Token**: Stored in an HTTP-only cookie (not accessible via JavaScript). Automatically sent on `/auth/refresh` requests.
+- **Session Restore**: On page reload, the frontend attempts to call `/auth/refresh` to restore the session. A brief loading state is shown during this process.
+- **Auto-Logout**: When the refresh token expires (10 days), the user is redirected to the Auth page.
+- **Logout**: Calls `/auth/logout` which clears the refresh token cookie server-side, then redirects to the Auth page.
+
+### UI States
+
+| State | Frontend Behavior |
+|-------|-------------------|
+| **Loading** | Skeleton placeholders or spinner shown during auth check |
+| **Error (Invalid Credentials)** | Red error message: "Invalid credentials" |
+| **Error (Username/Email Taken)** | Red inline error next to the field |
+| **Error (Network)** | Toast notification with error message |
+| **Success** | Welcome toast + redirect to Dashboard |
+| **Session Restore** | Brief loading screen while `/auth/refresh` is called |

@@ -8,6 +8,7 @@ import com.memoize.api.Repository.ConversationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -26,23 +27,29 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final ConversationRepository conversationRepository;
     private final ChatPersistanceService chatPersistanceService;
-    private final ChatClient vectorStoreChatClient;
+    private final ChatClient memoryChatClient;
+    private final ChatClient docAndMemoryChatClient;
     private final ChatClient simpleChatClient;
     private final Executor llmTaskExecutor;
+    private final RagService ragService;
 
     @Autowired
     public ChatServiceImpl(ChatRepository chatRepository,
                            ConversationRepository conversationRepository,
                            ChatPersistanceService chatPersistanceService,
                            @Qualifier("simple-gemini-3.1-flash-lite") ChatClient simpleChatClient,
-                           @Qualifier("vector-store-gemini-3.1-flash-lite") ChatClient vectorStoreChatClient,
-                           @Qualifier("llmTaskExecutor") Executor llmTaskExecutor) {
+                           @Qualifier("memory-gemini-3.1-flash-lite") ChatClient memoryChatClient,
+                           @Qualifier("memory-rag-gemini-3.1-flash-lite") ChatClient docAndMemoryChatClient,
+                           @Qualifier("llmTaskExecutor") Executor llmTaskExecutor,
+                           RagService ragService) {
         this.chatRepository = chatRepository;
         this.conversationRepository = conversationRepository;
         this.simpleChatClient = simpleChatClient;
-        this.vectorStoreChatClient = vectorStoreChatClient;
+        this.memoryChatClient = memoryChatClient;
+        this.docAndMemoryChatClient = docAndMemoryChatClient;
         this.chatPersistanceService = chatPersistanceService;
         this.llmTaskExecutor = llmTaskExecutor;
+        this.ragService = ragService;
     }
 
     @Override
@@ -64,7 +71,8 @@ public class ChatServiceImpl implements ChatService {
         .subscribeOn(Schedulers.boundedElastic())
         .flatMapMany(conversation -> {
             StringBuilder answerChunks = new StringBuilder();
-            return vectorStoreChatClient.prompt().user(query)
+            ChatClient chatClient = ragService.requireKnowledgeStore(query) ? docAndMemoryChatClient : memoryChatClient;
+            return chatClient.prompt().user(query)
                 .advisors(advisor -> advisor
                         .param("chat_memory_conversation_id", conversationId)
                         .param("chat_memory_response_size", 5))
