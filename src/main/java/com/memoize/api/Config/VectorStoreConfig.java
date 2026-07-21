@@ -14,7 +14,10 @@ public class VectorStoreConfig {
         return PgVectorStore.builder(jdbcTemplate, embeddingModel)
                 .vectorTableName("chat_memory_vector_store")
                 .dimensions(768)
+                .distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+                .indexType(PgVectorStore.PgIndexType.HNSW)
                 .initializeSchema(false)
+                .maxDocumentBatchSize(10000)
                 .build();
     }
 
@@ -23,7 +26,10 @@ public class VectorStoreConfig {
         return PgVectorStore.builder(jdbcTemplate, embeddingModel)
                 .vectorTableName("knowledge_vector_store")
                 .dimensions(768)
+                .distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+                .indexType(PgVectorStore.PgIndexType.HNSW)
                 .initializeSchema(false)
+                .maxDocumentBatchSize(10000)
                 .build();
     }
 }

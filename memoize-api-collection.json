@@ -383,7 +383,41 @@
       "response": []
     },
     {
-      "name": "test",
+      "name": "llm-chat",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-prod}}/ai/chat/b8e83e2d-2f06-4160-924c-7ece6365899e?query=give a 4 day Delhi and around itenary",
+          "host": [
+            "{{memoize-prod}}"
+          ],
+          "path": [
+            "ai",
+            "chat",
+            "b8e83e2d-2f06-4160-924c-7ece6365899e"
+          ],
+          "query": [
+            {
+              "key": "query",
+              "value": "give a 4 day Delhi and around itenary"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get-chats-of-conversation",
       "request": {
         "method": "GET",
         "header": [
@@ -394,36 +428,98 @@
           }
         ],
         "url": {
-          "raw": "{{memoize-local}}",
-          "host": [
-            "{{memoize-local}}"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "health",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{memoize-local}}/health",
+          "raw": "{{memoize-local}}/ai/chat/all",
           "host": [
             "{{memoize-local}}"
           ],
           "path": [
-            "health"
+            "ai",
+            "chat",
+            "all"
           ]
         }
       },
       "response": []
     },
     {
-      "name": "Test",
+      "name": "fetch-conversations",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}/ai/conversations/all",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "ai",
+            "conversations",
+            "all"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create-conversation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}/ai/conversation",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "ai",
+            "conversation"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get-conversation",
       "request": {
         "method": "GET",
         "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "delete-conversation",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{memoize-access-token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{memoize-local}}/ai/conversation/7949ad75-ab27-4fe7-95c1-638dde5f61b4",
+          "host": [
+            "{{memoize-local}}"
+          ],
+          "path": [
+            "ai",
+            "conversation",
+            "7949ad75-ab27-4fe7-95c1-638dde5f61b4"
+          ]
+        }
       },
       "response": []
     }

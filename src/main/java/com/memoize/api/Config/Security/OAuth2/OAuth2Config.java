@@ -9,6 +9,7 @@ import com.memoize.api.Enum.Role;
 import com.memoize.api.Repository.UserRepository;
 import com.memoize.api.Service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class OAuth2Config {
@@ -35,7 +37,7 @@ public class OAuth2Config {
     @Bean
     public AuthenticationFailureHandler authenticationFailureHandler() {
         return (request, response, exception) -> {
-            System.out.println("OAuth2 Error: " + exception.getMessage());
+            log.info("OAuth2 Error: {}", exception.getMessage());
             ObjectMapper objectMapper = new ObjectMapper();
             response.setStatus(401);
             response.setContentType("application/json");
