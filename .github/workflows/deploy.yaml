@@ -41,5 +41,5 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            kubectl set image deployment/memoize-api-deployment \
+            sudo k3s kubectl set image deployment/memoize-api-deployment \
             memoize-api-image=ghcr.io/harshpx/memoize-v3-api:sha-${{ github.sha }}
