@@ -36,7 +36,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/harshpx/sugarbayy-api:latest
-            ghcr.io/harshpx/sugarbayy-api:${{ github.sha }}
+            ghcr.io/harshpx/memoize-v3-api:latest
+            ghcr.io/harshpx/memoize-v3-api:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
