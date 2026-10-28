@@ -1,0 +1,20 @@
+name: railway-deploy
+
+on:
+  workflow_run:
+    workflows:
+      - build-and-push
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "Trigger Redeployment"
+        run: "npx -y @railway/cli@latest redeploy --service memoize-v3-api --yes"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
